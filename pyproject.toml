@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "langur"
+version = "0.0.1"
+authors = [{ name="Anders Lie", email="anders.erik.lie@gmail.com" }]
+dependencies = []
+
+[tool.setuptools]
+packages = ["langur"]
