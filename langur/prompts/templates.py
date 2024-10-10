@@ -19,3 +19,8 @@ class NodeGrow(Template):
     source_node_content: str
     existing_nodes: str
     existing_relations: str
+
+class BackSearch(Template):
+    goal: str
+    task: str
+    graph_context: str

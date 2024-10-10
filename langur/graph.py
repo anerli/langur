@@ -1,4 +1,5 @@
 # For vis
+import asyncio
 import networkx as nx
 from ipysigma import Sigma
 from pydantic import BaseModel
@@ -32,9 +33,10 @@ class Edge:
     def __str__(self):
         return f"{self.source_node.content} {self.relation} {self.dest_node.content}"
     
-class KG:
-    '''Knowledge Graph'''
-    def __init__(self):
+class Graph:
+    '''Knowledge Graph / Task Graph'''
+    def __init__(self, goal: str):
+        self.goal = goal
         self.nodes: set[Node] = set()
         self.edges: set[Edge] = set()
     
@@ -83,3 +85,44 @@ class KG:
             edge = Edge(node, item.relation, dest_node)
             if edge not in self.edges:
                 self.add_edge(edge)
+    
+    async def back_search(self, end_node: Node, iters=1):
+        class Output(BaseModel):
+            subtasks: list[str]
+        
+        frontier = [end_node]
+        new_frontier = []
+
+        for _ in range(iters):
+            jobs = []
+            for node in frontier:
+                task = node.content
+                print(f"Expanding: {task}")
+                job = FAST_LLM.with_structured_output(Output).ainvoke(
+                    templates.BackSearch(
+                        goal=self.goal,
+                        task=task,
+                        graph_context=self.describe()
+                    ).render()
+                )
+                jobs.append(job)
+                #jobs.append((task, job))
+            responses = await asyncio.gather(*jobs)
+            #responses = await asyncio.gather(*[job[1] for job in jobs])
+            for node, response in zip(frontier, responses):
+                print(response)
+                for subtask in response.subtasks:
+                    new_node = Node(subtask)
+                    self.add_node(new_node)
+                    self.add_edge(Edge(new_node, "required for", node))
+                    new_frontier.append(new_node)
+            frontier = new_frontier
+
+        
+    
+    def describe(self) -> str:
+        # naive
+        s = ""
+        for edge in self.edges:
+            s += f"{edge.source_node.content}->{edge.dest_node.content}\n"
+        return s
