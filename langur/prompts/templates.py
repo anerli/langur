@@ -24,3 +24,8 @@ class BackSearch(Template):
     goal: str
     task: str
     graph_context: str
+
+class FrontSearch(Template):
+    goal: str
+    graph_context: str
+    intermediate_products: str

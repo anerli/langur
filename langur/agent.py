@@ -8,19 +8,24 @@ from langur.prompts import templates
 from .llm import FAST_LLM
 
 class Langur:
-    def __init__(self):
+    def __init__(self, goal: str):
+        # TODO: eventually make so one agent can do various goals thus re-using brain state pathways etc cleverly
         self.world = World()
+        self.goal = goal
+        self.graph = Graph(goal)
     
     def use(self, *connectors: Connector):
         for connector in connectors:
             self.world.register_connector(connector)
         return self
 
-    async def act(self, task: str):
-        graph = Graph(task)
-        seed = Node(task)
-        graph.add_node(seed)
-        await graph.back_search(seed, iters=2)
+    async def act(self):
+        #graph = Graph(task)
+        #seed = Node(task)
+        #graph.add_node(seed)
+        #await graph.back_search(seed, iters=2)
+        await self.graph.back_search(iters=2)
+        await self.graph.front_search(iters=5)
 
         # class Output(BaseModel):
         #     subtasks: list[str]
@@ -39,4 +44,4 @@ class Langur:
         #     graph.add_node(node)
         #     graph.add_edge(Edge(node, "required for", seed))
 
-        return graph
+        #return graph
