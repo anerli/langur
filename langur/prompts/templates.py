@@ -10,7 +10,9 @@ class Template(BaseModel, ABC):
         template_path = f"{self.__class__.__name__}.jinja"
 
         template = jenv.get_template(template_path)
-        return template.render(**render_kwargs)
+        print("Render kwargs:", render_kwargs)
+        rendered_template = template.render(**render_kwargs)
+        return rendered_template
 
 class Test(Template):
     name: str

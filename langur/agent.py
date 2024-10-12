@@ -1,7 +1,9 @@
 
 
+import asyncio
 from pydantic import BaseModel
 from langur.connectors.connector import Connector
+from langur.worker import DependencyDecomposer, IntermediateProductBuilder, Worker
 from langur.world import World
 from langur.graph import Graph, Node, Edge
 from langur.prompts import templates
@@ -19,13 +21,22 @@ class Langur:
             self.world.register_connector(connector)
         return self
 
-    async def act(self):
+    async def act(self, cycles=1):
+        workers: list[Worker] = [DependencyDecomposer(), IntermediateProductBuilder(products_per_cycle=2)]
+
+        for _ in range(cycles):
+            jobs = []
+            for worker in workers:
+                jobs.append(worker.cycle(self.graph))
+            # naive async implementation, don't need to necessarily block gather here
+            await asyncio.gather(*jobs)
+
         #graph = Graph(task)
         #seed = Node(task)
         #graph.add_node(seed)
         #await graph.back_search(seed, iters=2)
-        await self.graph.back_search(iters=2)
-        await self.graph.front_search(iters=5)
+        #await self.graph.back_search(iters=2)
+        #await self.graph.front_search(iters=5)
 
         # class Output(BaseModel):
         #     subtasks: list[str]
