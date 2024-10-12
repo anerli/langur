@@ -22,12 +22,13 @@ class Langur:
         return self
 
     async def act(self, cycles=1):
-        workers: list[Worker] = [DependencyDecomposer(), IntermediateProductBuilder(products_per_cycle=2)]
+        workers: list[Worker] = [DependencyDecomposer(), IntermediateProductBuilder(), IntermediateProductBuilder()]
 
         for _ in range(cycles):
             jobs = []
             for worker in workers:
                 jobs.append(worker.cycle(self.graph))
+                #jobs.append(worker.cycle(self.graph))
             # naive async implementation, don't need to necessarily block gather here
             await asyncio.gather(*jobs)
 
