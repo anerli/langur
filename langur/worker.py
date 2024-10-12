@@ -7,17 +7,6 @@ from .prompts import templates
 
 class Worker(ABC):
     '''Meta-cognitive Worker'''
-    # Number of simulated async instances of this worker
-    # maybe do mult op instead? Worker()*2? idk
-    # instances: int = 1
-
-    # async def cycle_instances(self, graph: Graph):
-    #     # not a great async impl blocking all here until collected doesn't necessarily need to happen
-    #     jobs = []
-    #     for _ in range (self.instances):
-    #         jobs.append(self.cycle(graph))
-    #     await asyncio.gather(*jobs)
-
     @abstractmethod
     async def cycle(self, graph: Graph):
         '''
@@ -27,16 +16,10 @@ class Worker(ABC):
         pass
 
 class DependencyDecomposer(Worker):
-    #iters_per_cycle: int = 1 #= iters_per_cycle
-    #def __init__(self, iters_per_cycle=1):
-        #self.iters_per_cycle = iters_per_cycle
-    
     def __init__(self):
         self.frontier = None
     
     async def cycle(self, graph: Graph):
-        # TODO: operate well without iters_per_cycle
-        # Carry frontier in state instead then?
         class Output(BaseModel):
             subtasks: list[str]
         
@@ -44,7 +27,6 @@ class DependencyDecomposer(Worker):
             self.frontier = [graph.goal_node]
         new_frontier = []
 
-        #for _ in range(self.iters_per_cycle):
         jobs = []
         for node in self.frontier:
             task = node.content
@@ -57,9 +39,9 @@ class DependencyDecomposer(Worker):
                 ).render()
             )
             jobs.append(job)
-            #jobs.append((task, job))
+
         responses = await asyncio.gather(*jobs)
-        #responses = await asyncio.gather(*[job[1] for job in jobs])
+
         for node, response in zip(self.frontier, responses):
             print(response)
             for subtask in response.subtasks:
@@ -70,15 +52,11 @@ class DependencyDecomposer(Worker):
         self.frontier = new_frontier
 
 class IntermediateProductBuilder(Worker):
-    #products_per_cycle: int = 1
-    # def __init__(self, products_per_cycle=1):
-    #     self.products_per_cycle = products_per_cycle
-
     async def cycle(self, graph: Graph):
         class Output(BaseModel):
             dependencies: list[str]
             result: str
-        #for _ in range(self.products_per_cycle):
+        
         resp = await FAST_LLM.with_structured_output(Output).ainvoke(
             templates.FrontSearch(
                 goal=graph.goal,
