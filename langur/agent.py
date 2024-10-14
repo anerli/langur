@@ -25,6 +25,13 @@ class Langur:
         for worker in workers:
             jobs.append(worker.setup(self.graph))
         await asyncio.gather(*jobs)
+
+        # Late setup, TODO: proper priority system
+        jobs = []
+        for worker in workers:
+            jobs.append(worker.late_setup(self.graph))
+        await asyncio.gather(*jobs)
+
         self.workers = workers
 
     async def act(self, cycles=1):

@@ -1,13 +1,19 @@
 import asyncio
 from abc import ABC, abstractmethod
 from pydantic import BaseModel, Field
-from .graph import Graph, Node, Edge, NODE_IP, NODE_TASK, ProductNode, TaskNode
+from .graph import AssumptionNode, Graph, Node, Edge, NODE_IP, NODE_TASK, ProductNode, TaskNode
 from .llm import FAST_LLM
 from .prompts import templates
 
 class Worker(ABC):
     '''Meta-cognitive Worker'''
     async def setup(self, graph: Graph):
+        '''Runs once when workers are added to nexus'''
+        pass
+    
+    # TODO: generalize with priority system
+    async def late_setup(self, graph: Graph):
+        '''Runs once after all workers have been setup'''
         pass
 
     async def cycle(self, graph: Graph):
@@ -93,3 +99,62 @@ class IntermediateProductBuilder(Worker):
         # for src_node in src_nodes:
         #     graph.add_edge(Edge(src_node, "needed for", dest_node))
 
+class CriteriaBuilder(Worker):
+    
+    async def late_setup(self, graph: Graph):
+        goal_node = graph.query_node_by_id("final_goal")
+        context = graph.build_context(Node)
+
+        prompt = templates.Criteria(
+            goal=graph.goal,
+            graph_context=context
+        ).render()
+
+        print("Criteria Builder prompt:", prompt, sep="\n")
+
+        class Criterion(BaseModel):
+            id: str
+            description: str
+        
+        class Output(BaseModel):
+            criteria: list[Criterion]
+
+        resp = await FAST_LLM.with_structured_output(Output).ainvoke(
+            prompt
+        )
+        print(resp)
+
+        for item in resp.criteria:
+            new_node = TaskNode(item.id, item.description)
+            graph.add_node(new_node)
+            graph.add_edge(Edge(new_node, "criteria", goal_node))
+
+class AssumptionBuilder(Worker):
+    
+    async def late_setup(self, graph: Graph):
+        goal_node = graph.query_node_by_id("final_goal")
+        context = graph.build_context(Node)
+
+        prompt = templates.Assumptions(
+            goal=graph.goal,
+            graph_context=context
+        ).render()
+
+        print("Assumption Builder prompt:", prompt, sep="\n")
+
+        class Assumption(BaseModel):
+            id: str
+            description: str
+        
+        class Output(BaseModel):
+            assumptions: list[Assumption]
+
+        resp = await FAST_LLM.with_structured_output(Output).ainvoke(
+            prompt
+        )
+        print(resp)
+
+        for item in resp.assumptions:
+            new_node = AssumptionNode(item.id, item.description)
+            graph.add_node(new_node)
+            graph.add_edge(Edge(new_node, "assumption", goal_node))

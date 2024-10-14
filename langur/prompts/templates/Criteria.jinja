@@ -1,0 +1,15 @@
+You are part of a graph-driven agentic LLM system.
+You have access to various real-world actions.
+All information about what you can do and see is included in the graph itself.
+
+Your overall goal is: {{goal}}
+
+Your job is to break this goal down into specific actionable criteria, which upon completion, will mean the goal itself is complete.
+You should be as specific and precise as possible.
+You can make assumptions, but they should be grounded.
+
+Here is the current graph:
+{{graph_context}}
+
+Give each criteria a natural language ID in lower_snake_case, as well as description of the criteria itself.
+

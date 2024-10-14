@@ -58,6 +58,9 @@ class StaticNode(Node):
 class TaskNode(StaticNode):
     pass
 
+class AssumptionNode(StaticNode):
+    pass
+
 class ProductNode(StaticNode):
     pass
 
@@ -179,7 +182,7 @@ class Graph:
                 if node == edge.source_node:
                     context += f"{node.id}->{edge.dest_node.id}\n"
                 else:
-                    context += f"{node.id}<-{edge.src_node.id}\n"
+                    context += f"{node.id}<-{edge.source_node.id}\n"
             context += f"Node Content:\n{node.content()}"
             context += "\n\n"
         return context

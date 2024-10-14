@@ -31,3 +31,11 @@ class FrontSearch(Template):
     goal: str
     graph_context: str
     intermediate_products: str
+
+class Criteria(Template):
+    goal: str
+    graph_context: str
+
+class Assumptions(Template):
+    goal: str
+    graph_context: str
