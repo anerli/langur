@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 import asyncio
 import json
-from typing import Callable
+from typing import Callable, Type
 import networkx as nx
 from ipysigma import Sigma
 from pydantic import BaseModel
@@ -157,3 +157,29 @@ class Graph:
         for edge in self.edges:
             s += f"{edge.source_node.id}->{edge.dest_node.id}\n"
         return s
+
+    def build_context(self, *node_types: Type[Node]):
+        '''Build context from graph using only instances or instances of subclasses of the provided node types'''
+        # still naive, need topological sort or something to determine order and probably more sophisticated filtering
+        matching_nodes = []
+        # yikes inefficient, fix later
+        for node in self.nodes:
+            #print(node)
+            for node_type in node_types:
+                if isinstance(node, node_type):
+                    matching_nodes.append(node)
+                    break
+        #print("matching nodes:", matching_nodes)
+        context = ""
+        # todo: decide order somehow
+        for node in matching_nodes:
+            context += f"Node ID: {node.id}\n"
+            context += f"Node Edges:\n"
+            for edge in node.edges:
+                if node == edge.source_node:
+                    context += f"{node.id}->{edge.dest_node.id}\n"
+                else:
+                    context += f"{node.id}<-{edge.src_node.id}\n"
+            context += f"Node Content:\n{node.content()}"
+            context += "\n\n"
+        return context

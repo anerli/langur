@@ -41,7 +41,7 @@ class DependencyDecomposer(Worker):
                 templates.BackSearch(
                     goal=graph.goal,
                     task=task,
-                    graph_context=graph.describe()
+                    graph_context=graph.build_context(Node)# TODO what types of nodes do we want here? tmp wildcard
                 ).render()
             )
             jobs.append(job)
@@ -66,13 +66,17 @@ class IntermediateProductBuilder(Worker):
         class Output(BaseModel):
             dependency_ids: list[str]
             result: Node
-        
+
+        prompt = templates.FrontSearch(
+            goal=graph.goal,
+            graph_context=graph.build_context(Node),# TODO what types of nodes do we want here? tmp wildcard
+            intermediate_products="\n".join([node.content() for node in filter(lambda n: isinstance(n, ProductNode), graph.nodes)])
+        ).render()
+
+        print("IP Builder prompt:", prompt, sep="\n")
+    
         resp = await FAST_LLM.with_structured_output(Output).ainvoke(
-            templates.FrontSearch(
-                goal=graph.goal,
-                graph_context=graph.describe(),
-                intermediate_products="\n".join([node.content() for node in filter(lambda n: isinstance(n, ProductNode), graph.nodes)])
-            ).render()
+            prompt
         )
         print(resp)
         # "ProductNode" feels very silly
