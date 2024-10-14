@@ -1,13 +1,15 @@
 import asyncio
 from abc import ABC, abstractmethod
-from pydantic import BaseModel
-from .graph import Graph, Node, Edge, NODE_IP, NODE_TASK
+from pydantic import BaseModel, Field
+from .graph import Graph, Node, Edge, NODE_IP, NODE_TASK, ProductNode, TaskNode
 from .llm import FAST_LLM
 from .prompts import templates
 
 class Worker(ABC):
     '''Meta-cognitive Worker'''
-    @abstractmethod
+    async def setup(self, graph: Graph):
+        pass
+
     async def cycle(self, graph: Graph):
         '''
         Do one cycle with this worker; the implementation will vary widely depending on the worker's purpose.
@@ -20,8 +22,12 @@ class DependencyDecomposer(Worker):
         self.frontier = None
     
     async def cycle(self, graph: Graph):
+        class Subtask(BaseModel):
+            id: str
+            task: str
+        
         class Output(BaseModel):
-            subtasks: list[str]
+            subtasks: list[Subtask]
         
         if self.frontier is None:
             self.frontier = [graph.goal_node]
@@ -29,7 +35,7 @@ class DependencyDecomposer(Worker):
 
         jobs = []
         for node in self.frontier:
-            task = node.content
+            task = node.content()
             print(f"Expanding: {task}")
             job = FAST_LLM.with_structured_output(Output).ainvoke(
                 templates.BackSearch(
@@ -45,7 +51,7 @@ class DependencyDecomposer(Worker):
         for node, response in zip(self.frontier, responses):
             print(response)
             for subtask in response.subtasks:
-                new_node = Node(subtask, NODE_TASK)
+                new_node = TaskNode(subtask.id, subtask.task)
                 graph.add_node(new_node)
                 graph.add_edge(Edge(new_node, "required for", node))
                 new_frontier.append(new_node)
@@ -53,19 +59,33 @@ class DependencyDecomposer(Worker):
 
 class IntermediateProductBuilder(Worker):
     async def cycle(self, graph: Graph):
+        class Node(BaseModel):
+            id: str# = Field("id of dependency node")
+            content: str
+        
         class Output(BaseModel):
-            dependencies: list[str]
-            result: str
+            dependency_ids: list[str]
+            result: Node
         
         resp = await FAST_LLM.with_structured_output(Output).ainvoke(
             templates.FrontSearch(
                 goal=graph.goal,
                 graph_context=graph.describe(),
-                intermediate_products="\n".join([node.content for node in filter(lambda n: n.node_type == NODE_IP, graph.nodes)])
+                intermediate_products="\n".join([node.content() for node in filter(lambda n: isinstance(n, ProductNode), graph.nodes)])
             ).render()
         )
         print(resp)
-        dest_node = Node(resp.result, NODE_IP)
-        src_nodes = [Node(dep, NODE_IP) for dep in resp.dependencies]
-        for src_node in src_nodes:
+        # "ProductNode" feels very silly
+        dest_node = ProductNode(resp.result.id, resp.result.content)
+
+        for dep_id in resp.dependency_ids:
+            src_node = graph.query_node_by_id(dep_id)
+            if src_node is None:
+                raise RuntimeError(f"No existing node with ID `{dep_id}`")
             graph.add_edge(Edge(src_node, "needed for", dest_node))
+
+        # FIXME - query src nodes instead by ID check if exist
+        # src_nodes = [ProductNode(dep, NODE_IP) for dep in resp.dependencies]
+        # for src_node in src_nodes:
+        #     graph.add_edge(Edge(src_node, "needed for", dest_node))
+

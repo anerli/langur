@@ -18,8 +18,14 @@ class Langur:
             self.world.register_connector(connector)
         return self
 
-    async def act(self, cycles=1):
-        workers: list[Worker] = [DependencyDecomposer(), IntermediateProductBuilder(), IntermediateProductBuilder()]
+    async def act(self, workers: list[Worker], cycles=1):
+        #workers: list[Worker] = [DependencyDecomposer(), IntermediateProductBuilder(), IntermediateProductBuilder()]
+
+        # Call setup for each worker
+        jobs = []
+        for worker in workers:
+            jobs.append(worker.setup(self.graph))
+        await asyncio.gather(*jobs)
 
         for _ in range(cycles):
             jobs = []
