@@ -21,7 +21,8 @@ class Node(ABC):
         self.edges = set()
     
     def __hash__(self):
-        return hash((self.__class__.__name__, self.id))
+        return hash(self.id)
+        #return hash((self.__class__.__name__, self.id))
     
     def add_edge(self, edge: 'Edge'):
         self.edges.add(edge)
@@ -113,21 +114,24 @@ class Graph:
         self.edges: set[Edge] = set()
         self.add_node(self.goal_node)
     
-    # todo: change to get_nodes, @property is confusing i think
-    @property
-    def nodes(self):
-        return self._node_map.values()
+    def get_nodes(self) -> set[Node]:
+        return set(self._node_map.values())
 
     def add_node(self, node: Node):
         self._node_map[node.id] = node
         #self.nodes.add(node)
+    
+    def has_node(self, node: Node) -> bool:
+        return node in self.get_nodes()
 
     def add_edge(self, edge: Edge):
-        # Add either node if not already in graph
-        if edge.src_node not in self.nodes:
+        # Make sure nodes are in graph
+        if not self.has_node(edge.src_node):
             self.add_node(edge.src_node)
-        if edge.dest_node not in self.nodes:
+            #raise RuntimeError(f"Edge includes node not in graph: {edge.src_node}")
+        if not self.has_node(edge.dest_node):
             self.add_node(edge.dest_node)
+            #raise RuntimeError(f"Edge includes node not in graph: {edge.dest_node}")
         self.edges.add(edge)
     
     def add_edge_by_ids(self, src_id: str, relation: str, dest_id: str):
@@ -141,7 +145,7 @@ class Graph:
 
     def to_networkx(self):
         g = nx.DiGraph()
-        for node in self.nodes:
+        for node in self.get_nodes():
             #node_attributes = {attr: getattr(node, attr) for attr in dir(node) if not attr.startswith('__') and not callable(getattr(node, attr))}
             #print("Hello?")
             #print("Attrs:", node.get_visual_attributes())
@@ -180,7 +184,7 @@ class Graph:
         # still naive, need topological sort or something to determine order and probably more sophisticated filtering
         matching_nodes = []
         # yikes inefficient, fix later
-        for node in self.nodes:
+        for node in self.get_nodes():
             #print(node)
             for node_type in node_types:
                 if isinstance(node, node_type):

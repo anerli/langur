@@ -109,7 +109,7 @@ class IntermediateProductBuilder(Worker):
         prompt = templates.FrontSearch(
             goal=graph.goal,
             graph_context=graph.build_context(Node),# TODO what types of nodes do we want here? tmp wildcard
-            intermediate_products="\n".join([node.content() for node in filter(lambda n: isinstance(n, ProductNode), graph.nodes)])
+            intermediate_products="\n".join([node.content() for node in filter(lambda n: isinstance(n, ProductNode), graph.get_nodes())])
         ).render()
 
         print("IP Builder prompt:", prompt, sep="\n")
