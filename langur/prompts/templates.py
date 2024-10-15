@@ -14,27 +14,10 @@ class Template(BaseModel, ABC):
         rendered_template = template.render(**render_kwargs)
         return rendered_template
 
-class Test(Template):
-    name: str
-
-class NodeGrow(Template):
-    source_node_content: str
-    existing_nodes: str
-    existing_relations: str
-
-class BackSearch(Template):
-    goal: str
-    task: str
-    graph_context: str
-
 class FrontSearch(Template):
     goal: str
     graph_context: str
     intermediate_products: str
-
-class Criteria(Template):
-    goal: str
-    graph_context: str
 
 class Assumptions(Template):
     goal: str

@@ -66,46 +66,6 @@ class Planner(Worker):
             graph.add_edge_by_ids(item.from_id, "dependency", item.to_id)
 
 
-class DependencyDecomposer(Worker):
-    def __init__(self):
-        self.frontier = None
-    
-    async def cycle(self, graph: Graph):
-        class Subtask(BaseModel):
-            id: str
-            task: str
-        
-        class Output(BaseModel):
-            subtasks: list[Subtask]
-        
-        if self.frontier is None:
-            self.frontier = [graph.goal_node]
-        new_frontier = []
-
-        jobs = []
-        for node in self.frontier:
-            task = node.content()
-            print(f"Expanding: {task}")
-            job = FAST_LLM.with_structured_output(Output).ainvoke(
-                templates.BackSearch(
-                    goal=graph.goal,
-                    task=task,
-                    graph_context=graph.build_context()# TODO what types of nodes do we want here? tmp wildcard
-                ).render()
-            )
-            jobs.append(job)
-
-        responses = await asyncio.gather(*jobs)
-
-        for node, response in zip(self.frontier, responses):
-            print(response)
-            for subtask in response.subtasks:
-                new_node = TaskNode(subtask.id, subtask.task)
-                graph.add_node(new_node)
-                graph.add_edge(Edge(new_node, "required for", node))
-                new_frontier.append(new_node)
-        self.frontier = new_frontier
-
 class IntermediateProductBuilder(Worker):
     async def cycle(self, graph: Graph):
         class Node(BaseModel):
@@ -141,36 +101,6 @@ class IntermediateProductBuilder(Worker):
         # src_nodes = [ProductNode(dep, NODE_IP) for dep in resp.dependencies]
         # for src_node in src_nodes:
         #     graph.add_edge(Edge(src_node, "needed for", dest_node))
-
-class CriteriaBuilder(Worker):
-    
-    async def late_setup(self, graph: Graph):
-        goal_node = graph.query_node_by_id("final_goal")
-        context = graph.build_context()
-
-        prompt = templates.Criteria(
-            goal=graph.goal,
-            graph_context=context
-        ).render()
-
-        print("Criteria Builder prompt:", prompt, sep="\n")
-
-        class Criterion(BaseModel):
-            id: str
-            description: str
-        
-        class Output(BaseModel):
-            criteria: list[Criterion]
-
-        resp = await FAST_LLM.with_structured_output(Output).ainvoke(
-            prompt
-        )
-        print(resp)
-
-        for item in resp.criteria:
-            new_node = TaskNode(item.id, item.description)
-            graph.add_node(new_node)
-            graph.add_edge(Edge(new_node, "criteria", goal_node))
 
 class AssumptionBuilder(Worker):
     def get_setup_order(self) -> int:
