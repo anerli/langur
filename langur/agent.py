@@ -2,7 +2,7 @@
 
 import asyncio
 from langur.connectors.connector import Connector
-from langur.worker import DependencyDecomposer, IntermediateProductBuilder, Worker
+from langur.worker import Worker
 from langur.world import World
 from langur.graph import Graph
 
@@ -27,10 +27,19 @@ class Langur:
                 workers_by_setup_order[setup_order] = []
             workers_by_setup_order[setup_order].append(worker)
         
-        for setup_order, worker_group in workers_by_setup_order.items():
+        ordered_worker_groups = []
+        sorted_setup_orders = sorted(workers_by_setup_order.keys())
+        for setup_order in sorted_setup_orders:
+            ordered_worker_groups.append(workers_by_setup_order[setup_order])
+
+        print("worker groups:", ordered_worker_groups)
+
+        for worker_group in ordered_worker_groups:
+            
             # Call setup for each worker
             jobs = []
             for worker in worker_group:
+                print("doing setup for", worker)
                 jobs.append(worker.setup(self.graph))
             await asyncio.gather(*jobs)
 
