@@ -23,6 +23,39 @@ class Worker(ABC):
         '''
         pass
 
+class Planner(Worker):
+    '''Creates subgraph of subtasks necessary to achieve final goal'''
+    async def late_setup(self, graph: Graph):
+        # Late setup to have knowledge for available actions etc.
+        # Create a subgraph of subtasks with dependency relations as edges, connected to the final goal.
+        class NodeItem(BaseModel):
+            id: str
+            content: str
+
+        class EdgeItem(BaseModel):
+            from_id: str
+            to_id: str
+        
+        class Output(BaseModel):
+            nodes: list[NodeItem]
+            edges: list[EdgeItem]
+        
+        prompt = templates.Planner(
+            goal=graph.goal,
+            graph_context=graph.build_context(Node)
+        ).render()
+
+        print("Planning prompt:", prompt, sep="\n")
+
+        resp = await FAST_LLM.with_structured_output(Output).ainvoke(prompt)
+
+        # Build subgraph, todo: could create utils for creating subgraph as structured out
+        for item in resp.nodes:
+            graph.add_node(TaskNode(item.id, item.content))
+        for item in resp.edges:
+            graph.add_edge_by_ids(item.from_id, "dependency", item.to_id)
+
+
 class DependencyDecomposer(Worker):
     def __init__(self):
         self.frontier = None

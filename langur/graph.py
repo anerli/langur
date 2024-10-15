@@ -91,39 +91,54 @@ class ActionDefinitionNode(Node):
 
 class Edge:
     '''Knowledge Graph Edge'''
-    def __init__(self, source_node: Node, relation: str, dest_node: Node, bidirectional=False):
-        self.source_node = source_node
+    def __init__(self, src_node: Node, relation: str, dest_node: Node, bidirectional=False):
+        self.src_node = src_node
         self.dest_node = dest_node
         self.relation = relation
-        source_node.add_edge(self)
+        src_node.add_edge(self)
         dest_node.add_edge(self)
     
     def __hash__(self):
-        return hash((self.source_node.id, self.relation, self.dest_node.id))
+        return hash((self.src_node.id, self.relation, self.dest_node.id))
 
     def __str__(self):
-        return f"{self.source_node.id} {self.relation} {self.dest_node.id}"
+        return f"{self.src_node.id} {self.relation} {self.dest_node.id}"
     
 class Graph:
     '''Knowledge Graph / Task Graph'''
     def __init__(self, goal: str):
         self.goal = goal
         self.goal_node = TaskNode("final_goal", goal)
-        self.nodes: set[Node] = set()
+        self._node_map: dict[str, Node] = {}
         self.edges: set[Edge] = set()
         self.add_node(self.goal_node)
     
+    # todo: change to get_nodes, @property is confusing i think
+    @property
+    def nodes(self):
+        return self._node_map.values()
+
     def add_node(self, node: Node):
-        self.nodes.add(node)
+        self._node_map[node.id] = node
+        #self.nodes.add(node)
 
     def add_edge(self, edge: Edge):
         # Add either node if not already in graph
-        if edge.source_node not in self.nodes:
-            self.nodes.add(edge.source_node)
+        if edge.src_node not in self.nodes:
+            self.add_node(edge.src_node)
         if edge.dest_node not in self.nodes:
-            self.nodes.add(edge.dest_node)
+            self.add_node(edge.dest_node)
         self.edges.add(edge)
     
+    def add_edge_by_ids(self, src_id: str, relation: str, dest_id: str):
+        src_node = self.query_node_by_id(src_id)
+        dest_node = self.query_node_by_id(dest_id)
+        if not src_node:
+            raise RuntimeError(f"Invalid edge added, missing node with ID: `{src_id}`")
+        if not dest_node:
+            raise RuntimeError(f"Invalid edge added, missing node with ID: `{dest_id}`")
+        self.edges.add(Edge(src_node, relation, dest_node))
+
     def to_networkx(self):
         g = nx.DiGraph()
         for node in self.nodes:
@@ -132,16 +147,15 @@ class Graph:
             #print("Attrs:", node.get_visual_attributes())
             g.add_node(node.id, node_class=node.__class__.__name__, **node.get_visual_attributes())
         for edge in self.edges:
-            g.add_edge(edge.source_node.id, edge.dest_node.id, label=edge.relation)
+            g.add_edge(edge.src_node.id, edge.dest_node.id, label=edge.relation)
         return g
 
     def query_node_by_id(self, node_id: str) -> Node | None:
-        # TMP impl, make efficient by making nodes a map from ID to node
-        for node in self.nodes:
-            if node_id == node.id:
-                return node
-        return None
-    
+        try:
+            return self._node_map[node_id]
+        except KeyError:
+            return None
+
     def show(self):
         return Sigma(
             self.to_networkx(),
@@ -158,7 +172,7 @@ class Graph:
         # naive
         s = ""
         for edge in self.edges:
-            s += f"{edge.source_node.id}->{edge.dest_node.id}\n"
+            s += f"{edge.src_node.id}->{edge.dest_node.id}\n"
         return s
 
     def build_context(self, *node_types: Type[Node]):
@@ -179,10 +193,10 @@ class Graph:
             context += f"Node ID: {node.id}\n"
             context += f"Node Edges:\n"
             for edge in node.edges:
-                if node == edge.source_node:
+                if node == edge.src_node:
                     context += f"{node.id}->{edge.dest_node.id}\n"
                 else:
-                    context += f"{node.id}<-{edge.source_node.id}\n"
+                    context += f"{node.id}<-{edge.src_node.id}\n"
             context += f"Node Content:\n{node.content()}"
             context += "\n\n"
         return context

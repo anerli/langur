@@ -9,8 +9,8 @@ from textwrap import dedent
 
 # def anthropic_structured_resp(self, messages, schema):
 
-FAST_LLM = ChatOpenAI(model="gpt-4o-mini")
-SMART_LLM = ChatAnthropic(model="claude-3-5-sonnet-20240620")
+FAST_LLM = ChatOpenAI(model="gpt-4o-mini", temperature=0.0)
+SMART_LLM = ChatAnthropic(model="claude-3-5-sonnet-20240620", temperature=0.0)
 
 
 

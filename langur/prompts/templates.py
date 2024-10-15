@@ -39,3 +39,7 @@ class Criteria(Template):
 class Assumptions(Template):
     goal: str
     graph_context: str
+
+class Planner(Template):
+    goal: str
+    graph_context: str
