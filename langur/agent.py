@@ -31,23 +31,13 @@ class Langur:
         sorted_setup_orders = sorted(workers_by_setup_order.keys())
         for setup_order in sorted_setup_orders:
             ordered_worker_groups.append(workers_by_setup_order[setup_order])
-
-        print("worker groups:", ordered_worker_groups)
-
+        
         for worker_group in ordered_worker_groups:
-            
             # Call setup for each worker
             jobs = []
             for worker in worker_group:
-                print("doing setup for", worker)
                 jobs.append(worker.setup(self.graph))
             await asyncio.gather(*jobs)
-
-        # Late setup, TODO: proper priority system
-        # jobs = []
-        # for worker in workers:
-        #     jobs.append(worker.late_setup(self.graph))
-        # await asyncio.gather(*jobs)
 
         self.workers.append(workers)
 

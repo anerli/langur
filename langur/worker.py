@@ -6,20 +6,16 @@ from .llm import FAST_LLM
 from .prompts import templates
 
 class Worker(ABC):
-    # Lower order = earlier in setup
-    #setup_order = 0
-    def get_setup_order(self) -> int:
-        return 0
-
     '''Meta-cognitive Worker'''
+
+    def get_setup_order(self) -> int:
+        '''Lower order = earlier in setup'''
+        # Very simplistic system, likely will need to be redesigned
+        return 0
+    
     async def setup(self, graph: Graph):
         '''Runs once when workers are added to nexus'''
         pass
-    
-    # # TODO: generalize with priority system
-    # async def late_setup(self, graph: Graph):
-    #     '''Runs once after all workers have been setup'''
-    #     pass
 
     async def cycle(self, graph: Graph):
         '''
@@ -31,7 +27,6 @@ class Worker(ABC):
 class Planner(Worker):
     '''Creates subgraph of subtasks necessary to achieve final goal'''
 
-    #setup_order = 100
     def get_setup_order(self) -> int:
         return 100
     
@@ -96,11 +91,6 @@ class IntermediateProductBuilder(Worker):
             if src_node is None:
                 raise RuntimeError(f"No existing node with ID `{dep_id}`")
             graph.add_edge(Edge(src_node, "needed for", dest_node))
-
-        # FIXME - query src nodes instead by ID check if exist
-        # src_nodes = [ProductNode(dep, NODE_IP) for dep in resp.dependencies]
-        # for src_node in src_nodes:
-        #     graph.add_edge(Edge(src_node, "needed for", dest_node))
 
 class AssumptionBuilder(Worker):
     def get_setup_order(self) -> int:
