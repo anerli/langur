@@ -6,15 +6,20 @@ from .llm import FAST_LLM
 from .prompts import templates
 
 class Worker(ABC):
+    # Lower order = earlier in setup
+    #setup_order = 0
+    def get_setup_order(self) -> int:
+        return 0
+
     '''Meta-cognitive Worker'''
     async def setup(self, graph: Graph):
         '''Runs once when workers are added to nexus'''
         pass
     
-    # TODO: generalize with priority system
-    async def late_setup(self, graph: Graph):
-        '''Runs once after all workers have been setup'''
-        pass
+    # # TODO: generalize with priority system
+    # async def late_setup(self, graph: Graph):
+    #     '''Runs once after all workers have been setup'''
+    #     pass
 
     async def cycle(self, graph: Graph):
         '''
@@ -25,7 +30,12 @@ class Worker(ABC):
 
 class Planner(Worker):
     '''Creates subgraph of subtasks necessary to achieve final goal'''
-    async def late_setup(self, graph: Graph):
+
+    #setup_order = 100
+    def get_setup_order(self) -> int:
+        return 100
+    
+    async def setup(self, graph: Graph):
         # Late setup to have knowledge for available actions etc.
         # Create a subgraph of subtasks with dependency relations as edges, connected to the final goal.
         class NodeItem(BaseModel):
@@ -42,7 +52,7 @@ class Planner(Worker):
         
         prompt = templates.Planner(
             goal=graph.goal,
-            graph_context=graph.build_context(Node)
+            graph_context=graph.build_context()
         ).render()
 
         print("Planning prompt:", prompt, sep="\n")
@@ -80,7 +90,7 @@ class DependencyDecomposer(Worker):
                 templates.BackSearch(
                     goal=graph.goal,
                     task=task,
-                    graph_context=graph.build_context(Node)# TODO what types of nodes do we want here? tmp wildcard
+                    graph_context=graph.build_context()# TODO what types of nodes do we want here? tmp wildcard
                 ).render()
             )
             jobs.append(job)
@@ -108,7 +118,7 @@ class IntermediateProductBuilder(Worker):
 
         prompt = templates.FrontSearch(
             goal=graph.goal,
-            graph_context=graph.build_context(Node),# TODO what types of nodes do we want here? tmp wildcard
+            graph_context=graph.build_context(),# TODO what types of nodes do we want here? tmp wildcard
             intermediate_products="\n".join([node.content() for node in filter(lambda n: isinstance(n, ProductNode), graph.get_nodes())])
         ).render()
 
@@ -136,7 +146,7 @@ class CriteriaBuilder(Worker):
     
     async def late_setup(self, graph: Graph):
         goal_node = graph.query_node_by_id("final_goal")
-        context = graph.build_context(Node)
+        context = graph.build_context()
 
         prompt = templates.Criteria(
             goal=graph.goal,
@@ -163,10 +173,12 @@ class CriteriaBuilder(Worker):
             graph.add_edge(Edge(new_node, "criteria", goal_node))
 
 class AssumptionBuilder(Worker):
-    
-    async def late_setup(self, graph: Graph):
+    def get_setup_order(self) -> int:
+        return 50
+
+    async def setup(self, graph: Graph):
         goal_node = graph.query_node_by_id("final_goal")
-        context = graph.build_context(Node)
+        context = graph.build_context()
 
         prompt = templates.Assumptions(
             goal=graph.goal,

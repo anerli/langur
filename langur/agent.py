@@ -19,20 +19,28 @@ class Langur:
             self.world.register_connector(connector)
         return self
 
-    async def add_workers(self, *workers: list[Worker]):
-        # Call setup for each worker
-        jobs = []
+    async def add_workers(self, *workers: Worker):
+        workers_by_setup_order = {}
         for worker in workers:
-            jobs.append(worker.setup(self.graph))
-        await asyncio.gather(*jobs)
+            setup_order = worker.get_setup_order()
+            if setup_order not in workers_by_setup_order:
+                workers_by_setup_order[setup_order] = []
+            workers_by_setup_order[setup_order].append(worker)
+        
+        for setup_order, worker_group in workers_by_setup_order.items():
+            # Call setup for each worker
+            jobs = []
+            for worker in worker_group:
+                jobs.append(worker.setup(self.graph))
+            await asyncio.gather(*jobs)
 
         # Late setup, TODO: proper priority system
-        jobs = []
-        for worker in workers:
-            jobs.append(worker.late_setup(self.graph))
-        await asyncio.gather(*jobs)
+        # jobs = []
+        # for worker in workers:
+        #     jobs.append(worker.late_setup(self.graph))
+        # await asyncio.gather(*jobs)
 
-        self.workers = workers
+        self.workers.append(workers)
 
     async def act(self, cycles=1):
         #workers: list[Worker] = [DependencyDecomposer(), IntermediateProductBuilder(), IntermediateProductBuilder()]
