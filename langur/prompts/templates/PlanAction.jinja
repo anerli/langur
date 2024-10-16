@@ -12,9 +12,9 @@ To do this, you create ActionUse nodes which represent uses of a specific action
 When creating an ActionUse node, you must give it a natural language ID in lower_snake_case, as well as action inputs. Make sure each node ID is unique.
 
 Additionally, you must create edges as follows:
-- Create edges FROM ActionDefinition nodes TO ActionUse nodes of that action.
-- Create edges FROM ActionUse nodes TO Task nodes whose completion depends on that action use.
-- Create edges FROM Task nodes to ActionUse nodes when the input of the action depends on the outcome of a task.
+- Create edges FROM ActionDefinition nodes TO ActionUse nodes of that action ALWAYS.
+- Create edges FROM ActionUse nodes TO Task nodes whose completion depends on that action use ALWAYS.
+- Create edges FROM Task nodes TO ActionUse nodes ONLY IF the input of the action depends on the outcome of a task.
 
 Important: Action inputs are optional - you can either provide them now, or create edges from tasks to the node if certain inputs should be dynamically filled in later.
 
