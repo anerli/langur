@@ -39,7 +39,7 @@ class Langur:
                 jobs.append(worker.setup(self.graph))
             await asyncio.gather(*jobs)
 
-        self.workers.append(workers)
+        self.workers.extend(workers)
 
     async def act(self, cycles=1):
         #workers: list[Worker] = [DependencyDecomposer(), IntermediateProductBuilder(), IntermediateProductBuilder()]

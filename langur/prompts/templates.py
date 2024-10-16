@@ -26,3 +26,10 @@ class Assumptions(Template):
 class Planner(Template):
     goal: str
     graph_context: str
+
+class PlanAction(Template):
+    goal: str
+    graph_context: str
+    # todo: actually use jinja features
+    action_definition_node_ids: str
+    task_node_ids: str

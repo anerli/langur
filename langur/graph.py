@@ -14,7 +14,9 @@ NODE_TASK = "TASK"
 NODE_IP = "INTERMEDIATE_PRODUCT"
 
 
-class Node(ABC):
+class Node():
+    tags = []
+
     '''Knowledge Graph Node'''
     def __init__(self, id: str):
         self.id = id
@@ -23,6 +25,14 @@ class Node(ABC):
     def __hash__(self):
         return hash(self.id)
         #return hash((self.__class__.__name__, self.id))
+    
+    @classmethod
+    def get_tags(cls) -> set[str]:
+        all_tags = set(cls.tags)
+        for base in cls.__bases__:
+            if hasattr(base, 'get_tags'):
+                all_tags = all_tags.union(base.get_tags())
+        return all_tags
     
     def add_edge(self, edge: 'Edge'):
         self.edges.add(edge)
@@ -41,6 +51,8 @@ class Node(ABC):
         }
 
 class ObservableNode(Node):
+    tags = ["observable"]
+
     def __init__(self, id: str, content_getter: Callable[[], str]):
         super().__init__(id)
         self.content_getter = content_getter
@@ -49,6 +61,8 @@ class ObservableNode(Node):
         return self.content_getter()
 
 class StaticNode(Node):
+    tags = ["static"]
+
     def __init__(self, id: str, content: str):
         super().__init__(id)
         self._content = content
@@ -57,7 +71,27 @@ class StaticNode(Node):
         return self._content
 
 class TaskNode(StaticNode):
+    tags = ["task"]
     pass
+
+class ActionUseNode(Node):
+    tags = ["action"]
+    
+    def __init__(self, id: str, payload: dict):
+        '''payload: empty, partial, or full input dict'''
+        super().__init__(id)
+        self.payload = payload
+    
+    def content(self):
+        formatted_inputs = json.dumps(self.payload)
+        return f"Action Use ID: {self.id}\nAction Inputs:\n{formatted_inputs}"
+
+    def get_visual_attributes(self):
+        formatted_inputs = json.dumps(self.payload)
+        return {
+            **super().get_visual_attributes(),
+            "payload": formatted_inputs
+        }
 
 class AssumptionNode(StaticNode):
     pass
@@ -66,6 +100,8 @@ class ProductNode(StaticNode):
     pass
 
 class ActionDefinitionNode(Node):
+    tags = ["action_definition"]
+
     def __init__(self, action_id: str, description: str, schema: dict):
         '''
         description: natural language description of exactly what this action does
@@ -159,6 +195,17 @@ class Graph:
             return self._node_map[node_id]
         except KeyError:
             return None
+    
+    def query_nodes_by_tag(self, *tags: str) -> set[Node]:
+        '''Get all nodes with at least one of the provided tags'''
+        # could make more efficient with some kind of caching, idk if necessary
+        matches = set()
+        for node in self.get_nodes():
+            for tag in tags:
+                if tag in node.get_tags():
+                    matches.add(node)
+                    break
+        return matches
 
     def show(self):
         return Sigma(
@@ -179,11 +226,19 @@ class Graph:
             s += f"{edge.src_node.id}->{edge.dest_node.id}\n"
         return s
 
-    def build_context(self):
+    def build_context(self, filter_tags: list[str] = None):
+        '''
+        filter_tags: Include only nodes with one of the provided tags
+        '''
+        if filter_tags is None:
+            nodes = self.get_nodes()
+        else:
+            nodes = self.query_nodes_by_tag(*filter_tags)
+        
         # TODO: Re-add filtering system
         context = ""
         # todo: decide order somehow
-        for node in self.get_nodes():
+        for node in nodes:
             context += f"Node ID: {node.id}\n"
             context += f"Node Edges:\n"
             for edge in node.edges:
