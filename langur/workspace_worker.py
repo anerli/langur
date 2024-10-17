@@ -132,11 +132,12 @@ class WorkspaceConnector(Worker):
         
         prompt = templates.TaskToActions(
             goal=graph.goal,
-            graph_context=context,
+            observables="\n".join([node.content() for node in graph.query_nodes_by_tag("observable")]),
             task=f"{task_node.id}: {task_node.content()}",
-            action_definition_node_ids="\n".join([node.id for node in graph.query_nodes_by_tag("action_definition")]),
+            action_definitions="\n".join([f"- {node.id}: {node.description}" for node in graph.query_nodes_by_tag("action_definition")]),
+            #action_definition_node_ids="\n".join([node.id for node in graph.query_nodes_by_tag("action_definition")]),
             # TODO: proper filter mechanism for node sets - make sure these upstream are Task nodes, but in less ugly/re-usable way
-            upstream_tasks="\n".join([node.id for node in filter(lambda n: "task" in n.get_tags(), task_node.upstream_nodes())]),
+            upstream_tasks="\n".join([f"- {node.id}: {node.content()}" for node in filter(lambda n: "task" in n.get_tags(), task_node.upstream_nodes())]),
         ).render()
 
         print("Action connection prompt:", prompt, sep="\n")
@@ -167,7 +168,7 @@ class WorkspaceConnector(Worker):
         # tmp
         #task_node = graph.query_node_by_id("read_student_papers")
         task_nodes = set(filter(lambda node: node.id != "final_goal", graph.query_nodes_by_tag("task")))
-        #task_nodes = [graph.query_node_by_id("write_grades_to_file")]#, graph.query_node_by_id("grade_student_papers")]
+        #task_nodes = [graph.query_node_by_id("grade_papers")]
         jobs = []
         # Possibly some concurrent operations could be iffy on shared graph structure
         for task_node in task_nodes:

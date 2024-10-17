@@ -2,10 +2,8 @@ You are a component of a graph-driven agentic LLM system.
 
 Your overall goal is: {{goal}}
 
-For reference, here is the current graph:
-{{graph_context}}
-
----
+Relevant context:
+{{observables}}
 
 You are planning out the execution of specific actions to help accomplish the goal.
 Given a specific Task node, your job is to convert it into specific ActionUse nodes, representing distinct uses of various available actions.
@@ -18,8 +16,8 @@ When you create an action you must include:
 **node_id**: a unique natural language ID in lower_snake_case describing the action use
 
 **action_id**: The Node ID of the ActionDefinition node corresponding to this ActionUse node.
-Here are the ActionDefinition node IDs available:
-{{action_definition_node_ids}}
+Here are the ActionDefinition nodes available:
+{{action_definitions}}
 
 **action_input**: You may provide or omit each parameter of the action input. Provide the parameter ONLY IF it is clear right now what it should be. Otherwise, provide the string "UNKNOWN".
 Upstream tasks for reference:

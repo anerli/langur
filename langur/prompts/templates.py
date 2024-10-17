@@ -36,7 +36,7 @@ class PlanAction(Template):
 
 class TaskToActions(Template):
     goal: str
-    graph_context: str
+    observables: str
     task: str
-    action_definition_node_ids: str
+    action_definitions: str
     upstream_tasks: str
