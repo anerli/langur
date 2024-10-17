@@ -5,7 +5,7 @@ from fs.osfs import OSFS
 from fs.walk import Walker
 from pydantic import BaseModel
 
-from langur.llm import FAST_LLM
+from langur.llm import FAST_LLM, SMART_LLM
 from langur.prompts import templates
 from .worker import Worker
 from .graph import ActionDefinitionNode, ActionUseNode, Graph, Node, ObservableNode
@@ -77,13 +77,22 @@ class WorkspaceConnector(Worker):
                 "type": "object",
                 "properties": {
                     "node_id": {"type": "string"},
+                    "action_definition_node_id": {"type": "string"},
                     "action_input": {
                         "type": "object",
                         "properties": input_schema
                         # no "required" array so inputs optional
-                    }
+                    },
+                    "downstream_dependent_task_ids": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "upstream_dependency_task_ids": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
                 },
-                "required": ["node_id", "action_input"]
+                "required": ["node_id", "action_definition_node_id", "action_input", "downstream_dependent_task_ids", "upstream_dependency_task_ids"]
             })
 
         schema = {
@@ -97,19 +106,19 @@ class WorkspaceConnector(Worker):
                         "oneOf": action_node_schemas
                     }
                 },
-                "edges": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "from_id": {"type": "string"},
-                            "to_id": {"type": "string"}
-                        },
-                        "required": ["from_id", "to_id"]
-                    }
-                }
+                # "edges": {
+                #     "type": "array",
+                #     "items": {
+                #         "type": "object",
+                #         "properties": {
+                #             "from_id": {"type": "string"},
+                #             "to_id": {"type": "string"}
+                #         },
+                #         "required": ["from_id", "to_id"]
+                #     }
+                # }
             },
-            "required": ["action_uses", "edges"]
+            "required": ["action_uses"]#, "edges"]
         }
 
         context = graph.build_context()
@@ -123,20 +132,31 @@ class WorkspaceConnector(Worker):
 
         print("Action connection prompt:", prompt, sep="\n")
 
-        resp = await FAST_LLM.with_structured_output(schema).ainvoke(prompt)
+        resp = await SMART_LLM.with_structured_output(schema).ainvoke(prompt)
 
         print(resp)
 
         # Build action use nodes
         for item in resp["action_uses"]:
-            node = ActionUseNode(item["node_id"], item["action_input"])
+            node_id = item["node_id"]
+            node = ActionUseNode(node_id, item["action_input"])
+            action_def_id = item["action_definition_node_id"]
+            downstream_task_ids = item["downstream_dependent_task_ids"]
+            upstream_task_ids = item["upstream_dependency_task_ids"]
+
             graph.add_node(node)
+
+            graph.add_edge_by_ids(action_def_id, "definition", node_id)
+            for task_id in downstream_task_ids:
+                graph.add_edge_by_ids(node_id, "helps complete", task_id)
+            for task_id in upstream_task_ids:
+                graph.add_edge_by_ids(task_id, "required for", node_id)
         
-        for item in resp["edges"]:
-            # todo: relation could be either input dependency, or action task resolve, ...
-            # maybe separate edges in structured out
-            # or maybe should be separate prompts/workers
-            graph.add_edge_by_ids(item["from_id"], "action", item["to_id"])
+        # for item in resp["edges"]:
+        #     # todo: relation could be either input dependency, or action task resolve, ...
+        #     # maybe separate edges in structured out
+        #     # or maybe should be separate prompts/workers
+        #     graph.add_edge_by_ids(item["from_id"], "action", item["to_id"])
 
         # # Build subgraph, todo: could create utils for creating subgraph as structured out
         # for item in resp.nodes:
