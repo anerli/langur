@@ -65,16 +65,7 @@ class WorkspaceConnector(Worker):
         )
     
     async def task_to_actions(self, graph: Graph, task_node: TaskNode):
-        context = graph.build_context()
         
-        prompt = templates.TaskToActions(
-            goal=graph.goal,
-            graph_context=context,
-            task=f"{task_node.id}: {task_node.content}",
-            action_definition_node_ids="\n".join([node.id for node in graph.query_nodes_by_tag("action_definition")]),
-            # TODO: proper filter mechanism for node sets - make sure these upstream are Task nodes, but in less ugly/re-usable way
-            upstream_tasks="\n".join([node.id for node in filter(lambda n: "task" in n.get_tags(), task_node.upstream_nodes())]),
-        ).render()
 
         # Query graph for action definitions
         action_def_nodes: list[ActionDefinitionNode] = graph.query_nodes_by_tag("action_definition")
@@ -134,6 +125,20 @@ class WorkspaceConnector(Worker):
 
         print(json.dumps(schema, indent=4))
 
+        context = graph.build_context(
+            *task_node.upstream_nodes(),
+            *graph.query_nodes_by_tag("action_definition", "observable")
+        )
+        
+        prompt = templates.TaskToActions(
+            goal=graph.goal,
+            graph_context=context,
+            task=f"{task_node.id}: {task_node.content()}",
+            action_definition_node_ids="\n".join([node.id for node in graph.query_nodes_by_tag("action_definition")]),
+            # TODO: proper filter mechanism for node sets - make sure these upstream are Task nodes, but in less ugly/re-usable way
+            upstream_tasks="\n".join([node.id for node in filter(lambda n: "task" in n.get_tags(), task_node.upstream_nodes())]),
+        ).render()
+
         print("Action connection prompt:", prompt, sep="\n")
 
         resp = await FAST_LLM.with_structured_output(schema).ainvoke(prompt)
@@ -143,6 +148,7 @@ class WorkspaceConnector(Worker):
         # Build action use nodes
         action_use_nodes = []
         for item in resp["action_uses"]:
+            item["node_id"] = f'{task_node.id}::{item["node_id"]}'
             node_id = item["node_id"]
             node = ActionUseNode(node_id, item["action_input"])
             action_use_nodes.append(node)

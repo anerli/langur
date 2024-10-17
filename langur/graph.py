@@ -295,15 +295,19 @@ class Graph:
             s += f"{edge.src_node.id}->{edge.dest_node.id}\n"
         return s
 
-    def build_context(self, filter_tags: list[str] = None):
+    # def query(self, filter_tags: list[str] = None):
+    #     if filter_tags is None:
+    #         nodes = self.get_nodes()
+    #     else:
+    #         nodes = self.query_nodes_by_tag(*filter_tags)
+    #     return nodes
+
+    def build_context(self, *nodes: Node):
         '''
         filter_tags: Include only nodes with one of the provided tags
         '''
-        if filter_tags is None:
-            nodes = self.get_nodes()
-        else:
-            nodes = self.query_nodes_by_tag(*filter_tags)
-        
+        nodes = nodes if nodes else self.get_nodes()
+
         # TODO: Re-add filtering system
         context = ""
         # todo: decide order somehow
