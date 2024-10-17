@@ -41,6 +41,18 @@ class Node():
     def add_edge(self, edge: 'Edge'):
         self.edges.add(edge)
     
+    def incoming_edges(self) -> set['Edge']:
+        return set(filter(lambda edge: edge.dest_node == self, self.edges))
+    
+    def upstream_nodes(self) -> set['Node']:
+        return set(edge.src_node for edge in self.incoming_edges())
+
+    def outgoing_edges(self) -> set['Edge']:
+        return set(filter(lambda edge: edge.src_node == self, self.edges))
+
+    def downstream_nodes(self) -> set['Node']:
+        return set(edge.dest_node for edge in self.outgoing_edges())
+    
     @abstractmethod
     def content(self) -> str:
         pass
@@ -227,12 +239,6 @@ class Graph:
         return matches
 
     def remove_edge(self, edge: Edge):
-        # print(edge.src_node, edge.src_node.edges)
-        # print(edge.dest_node, edge.dest_node.edges)
-        # print("in?", edge in edge.src_node.edges)
-        # print(hash(edge))
-        # print(list(hash(e) for e in edge.src_node.edges))
-        # print(hash(edge) in list(hash(e) for e in edge.src_node.edges))
         edge.src_node.edges.remove(edge)
         edge.dest_node.edges.remove(edge)
         self.edges.remove(edge)

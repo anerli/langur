@@ -33,3 +33,10 @@ class PlanAction(Template):
     # todo: actually use jinja features
     action_definition_node_ids: str
     task_node_ids: str
+
+class TaskToActions(Template):
+    goal: str
+    graph_context: str
+    task: str
+    action_definition_node_ids: str
+    upstream_tasks: str
