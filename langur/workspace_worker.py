@@ -56,6 +56,13 @@ class WorkspaceConnector(Worker):
                 schema={"file_path": {"type": "string"}, "new_content": {"type": "string"}}
             )
         )
+        graph.add_node(
+            ActionDefinitionNode(
+                action_id="think",
+                description="Do purely cognitive processing.",
+                schema={}
+            )
+        )
     
     async def task_to_actions(self, graph: Graph, task_node: TaskNode):
         context = graph.build_context()
@@ -153,13 +160,13 @@ class WorkspaceConnector(Worker):
         # Choose task to decompose
         # tmp
         #task_node = graph.query_node_by_id("read_student_papers")
-        task_nodes = set(filter(lambda node: node.id != "final_goal" and node.id != "grade_student_papers", graph.query_nodes_by_tag("task")))
+        task_nodes = set(filter(lambda node: node.id != "final_goal", graph.query_nodes_by_tag("task")))
         #task_nodes = [graph.query_node_by_id("write_grades_to_file")]#, graph.query_node_by_id("grade_student_papers")]
-        #jobs = []
+        jobs = []
         # Possibly some concurrent operations could be iffy on shared graph structure
         for task_node in task_nodes:
-            #jobs.append(self.task_to_actions(graph, task_node))
-            await self.task_to_actions(graph, task_node)
+            jobs.append(self.task_to_actions(graph, task_node))
+            #await self.task_to_actions(graph, task_node)
         
-        #await asyncio.gather(*jobs)
+        await asyncio.gather(*jobs)
 
