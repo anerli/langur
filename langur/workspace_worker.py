@@ -132,7 +132,7 @@ class WorkspaceConnector(Worker):
 
         print("Action connection prompt:", prompt, sep="\n")
 
-        resp = await SMART_LLM.with_structured_output(schema).ainvoke(prompt)
+        resp = await FAST_LLM.with_structured_output(schema).ainvoke(prompt)
 
         print(resp)
 

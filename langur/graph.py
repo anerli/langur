@@ -26,6 +26,10 @@ class Node():
         return hash(self.id)
         #return hash((self.__class__.__name__, self.id))
     
+    # def __eq__(self, other):
+    #     if not isinstance(other, Node):
+    #         return False
+    
     @classmethod
     def get_tags(cls) -> set[str]:
         all_tags = set(cls.tags)
@@ -49,6 +53,9 @@ class Node():
         return {
             "content": self.content()
         }
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} id='{self.id}' tags={self.get_tags()} edges={self.edges}>"
 
 class ObservableNode(Node):
     tags = ["observable"]
@@ -138,8 +145,20 @@ class Edge:
     def __hash__(self):
         return hash((self.src_node.id, self.relation, self.dest_node.id))
 
+    def __eq__(self, other):
+        if not isinstance(other, Edge):
+            return False
+        return hash(self) == hash(other)
+
     def __str__(self):
         return f"{self.src_node.id} {self.relation} {self.dest_node.id}"
+
+    def copy(self):
+        return Edge(self.src_node, self.relation, self.dest_node)
+
+    def __repr__(self) -> str:
+        #return f"<{self.__class__.__name__} {self.src_node.id} --{self.relation}--> {self.dest_node.id}>"
+        return f"Edge('{self.src_node.id}'-[{self.relation}]->'{self.dest_node.id}')"
     
 class Graph:
     '''Knowledge Graph / Task Graph'''
@@ -206,6 +225,33 @@ class Graph:
                     matches.add(node)
                     break
         return matches
+
+    def remove_edge(self, edge: Edge):
+        # print(edge.src_node, edge.src_node.edges)
+        # print(edge.dest_node, edge.dest_node.edges)
+        # print("in?", edge in edge.src_node.edges)
+        # print(hash(edge))
+        # print(list(hash(e) for e in edge.src_node.edges))
+        # print(hash(edge) in list(hash(e) for e in edge.src_node.edges))
+        edge.src_node.edges.remove(edge)
+        edge.dest_node.edges.remove(edge)
+        self.edges.remove(edge)
+
+    def substitute(self, node_id: str, replacements: list[Node]):
+        '''Replace a node by swapping it out for one or more nodes, which will each assume all incoming and outgoing edges of the replaced node'''
+        to_replace = self.query_node_by_id(node_id)
+        # copy cus deleting as we go
+        to_replace_edges_copy = to_replace.edges.copy()
+        for edge in to_replace_edges_copy:
+            for node in replacements:
+                new_edge = edge.copy()
+                if to_replace == new_edge.src_node:
+                    new_edge.src_node = node
+                else:
+                    new_edge.dest_node = node
+                self.add_edge(new_edge)
+            self.remove_edge(edge)
+
 
     def show(self):
         return Sigma(
