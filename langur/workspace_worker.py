@@ -103,9 +103,10 @@ class WorkspaceConnector(Worker):
                         "properties": input_schema,
                         "description": "Input for the action. Only include parameters if known right now, otherwise provide UNKNOWN."
                         # no "required" array so inputs optional
-                    }
+                    },
+                    "upstream_action_ids": {"type": "array", "items": {"type": "string"}},
                 },
-                "required": ["node_id", "action_definition_node_id", "action_input"]
+                "required": ["node_id", "action_definition_node_id", "action_input", "upstream_action_ids"]
             })
 
         schema = {
@@ -123,7 +124,7 @@ class WorkspaceConnector(Worker):
             "required": ["action_uses"]
         }
 
-        print(json.dumps(schema, indent=4))
+        #print(json.dumps(schema, indent=4))
 
         context = graph.build_context(
             *task_node.upstream_nodes(),
@@ -137,7 +138,10 @@ class WorkspaceConnector(Worker):
             action_definitions="\n".join([f"- {node.id}: {node.description}" for node in graph.query_nodes_by_tag("action_definition")]),
             #action_definition_node_ids="\n".join([node.id for node in graph.query_nodes_by_tag("action_definition")]),
             # TODO: proper filter mechanism for node sets - make sure these upstream are Task nodes, but in less ugly/re-usable way
-            upstream_tasks="\n".join([f"- {node.id}: {node.content()}" for node in filter(lambda n: "task" in n.get_tags(), task_node.upstream_nodes())]),
+            #upstream_tasks="\n".join([f"- {node.id}: {node.content()}" for node in filter(lambda n: "task" in n.get_tags(), task_node.upstream_nodes())]),
+            #upstream_actions="\n".join([f"{node.content()}" for node in filter(lambda n: "action" in n.get_tags(), task_node.upstream_nodes())]),
+            # Because we start with upstream decomp, these should all be upstream deps
+            upstream_actions="\n".join([f"{node.content()}" for node in graph.query_nodes_by_tag("action")]),
         ).render()
 
         print("Action connection prompt:", prompt, sep="\n")
@@ -149,13 +153,24 @@ class WorkspaceConnector(Worker):
         # Build action use nodes
         action_use_nodes = []
         for item in resp["action_uses"]:
-            item["node_id"] = f'{task_node.id}::{item["node_id"]}'
+            #item["node_id"] = f'{task_node.id}::{item["node_id"]}'
             node_id = item["node_id"]
             node = ActionUseNode(node_id, item["action_input"])
             action_use_nodes.append(node)
         
         # Substitute the task node for the action nodes, keeping incoming/outgoing edges
-        graph.substitute(task_node.id, action_use_nodes)
+        graph.substitute(task_node.id, action_use_nodes, keep_incoming=False, keep_outgoing=True)
+
+        for item in resp["action_uses"]:
+            print("?", graph.query_node_by_id(item["node_id"]))
+
+        # Add generated deps
+        for item in resp["action_uses"]:
+            for upstream_id in item["upstream_action_ids"]:
+                graph.add_edge_by_ids(upstream_id, "gen dep", item["node_id"])
+        
+        for item in resp["action_uses"]:
+            print("?", graph.query_node_by_id(item["node_id"]))
 
         # Add definition edges once substitution is complete
         for item in resp["action_uses"]:
@@ -164,16 +179,32 @@ class WorkspaceConnector(Worker):
 
 
     async def cycle(self, graph: Graph):
-        # Choose task to decompose
-        # tmp
-        #task_node = graph.query_node_by_id("read_student_papers")
-        task_nodes = set(filter(lambda node: node.id != "final_goal", graph.query_nodes_by_tag("task")))
         #task_nodes = [graph.query_node_by_id("grade_papers")]
-        jobs = []
-        # Possibly some concurrent operations could be iffy on shared graph structure
-        for task_node in task_nodes:
-            jobs.append(self.task_to_actions(graph, task_node))
-            #await self.task_to_actions(graph, task_node)
+        # TODO: should be filtering upstream/downstream to make sure only Task nodes
+        task_nodes = set(filter(lambda node: node.id != "final_goal", graph.query_nodes_by_tag("task")))
+        frontier = set(filter(lambda node: len(node.upstream_nodes()) == 0, task_nodes))
+
+        while frontier:
+            new_frontier = set()
+            for task_node in frontier:
+                # todo: parallel
+                print("Converting to actions:", task_node)
+                new_frontier = new_frontier.union(task_node.downstream_nodes())
+                await self.task_to_actions(graph, task_node)
+            goal_node = graph.query_node_by_id("final_goal")
+            if goal_node in new_frontier:
+                new_frontier.remove(goal_node)
+            frontier = new_frontier
+            
+        # jobs = []
+        # # Possibly some concurrent operations could be iffy on shared graph structure
+        # for task_node in task_nodes:
+        #     jobs.append(self.task_to_actions(graph, task_node))
+        #     #await self.task_to_actions(graph, task_node)
+
+        # for task_node in task_nodes:
+        #     jobs.append(self.task_to_actions(graph, task_node))
+        #     #await self.task_to_actions(graph, task_node)
         
-        await asyncio.gather(*jobs)
+        # await asyncio.gather(*jobs)
 

@@ -10,7 +10,7 @@ class Template(BaseModel, ABC):
         template_path = f"{self.__class__.__name__}.jinja"
 
         template = jenv.get_template(template_path)
-        print("Render kwargs:", render_kwargs)
+        #print("Render kwargs:", render_kwargs)
         rendered_template = template.render(**render_kwargs)
         return rendered_template
 
@@ -39,4 +39,4 @@ class TaskToActions(Template):
     observables: str
     task: str
     action_definitions: str
-    upstream_tasks: str
+    upstream_actions: str

@@ -190,6 +190,8 @@ class Graph:
         return set(self._node_map.values())
 
     def add_node(self, node: Node):
+        if node.id in self._node_map:
+            raise RuntimeError("ID collision when adding node:", node)
         self._node_map[node.id] = node
         #self.nodes.add(node)
     
@@ -249,31 +251,53 @@ class Graph:
         self.edges.remove(edge)
     
     def remove_node(self, node: Node):
-        for edge in node.edges:
+        edges = node.edges.copy()
+        for edge in edges:
             self.remove_edge(edge)
         del self._node_map[node.id]
+    
+    # NOPE breaks edge hashes and crap
+    # def change_node_id(self, node: Node, new_id: str):
+    #     del self._node_map[node.id]
+    #     node.id = new_id
+    #     self._node_map[new_id] = node
 
-    def substitute(self, node_id: str, replacements: list[Node]):
+    def substitute(self, node_id: str, replacements: list[Node], keep_incoming=True, keep_outgoing=True):
         '''Replace a node by swapping it out for one or more nodes, which will each assume all incoming and outgoing edges of the replaced node'''
         to_replace = self.query_node_by_id(node_id)
+        # basically a hack to avoid ID collisions when replacements have same ID
+        #self.change_node_id(to_replace, "REPLACING")
         # copy cus deleting as we go
         to_replace_edges_copy = to_replace.edges.copy()
-        print(to_replace_edges_copy)
-        for edge in to_replace_edges_copy:
-            print("Edge:", edge)
-            for node in replacements:
+        self.remove_node(to_replace)
+
+        print(self.query_node_by_id("B"))
+        #print(to_replace_edges_copy)
+        
+            #print("Edge:", edge)
+        for node in replacements:
+            print("Replacement:", node)
+            print(self.query_node_by_id("B"))
+            self.add_node(node)
+            for edge in to_replace_edges_copy:
+                
                 #new_edge = edge.copy()
-                if to_replace == edge.src_node:
+                #if node.id == to_replace.id
+                
+                
+                if to_replace == edge.src_node and keep_outgoing:
                     #new_edge.src_node = node
                     new_edge = Edge(node, edge.relation, edge.dest_node)
-                else:
+                    self.add_edge(new_edge)
+                if to_replace == edge.dest_node and keep_incoming:
                     #new_edge.dest_node = node
                     new_edge = Edge(edge.src_node, edge.relation, node)
-                print("Adding:", new_edge)
-                self.add_edge(new_edge)
-            print("Removing:", edge)
-            self.remove_edge(edge)
-        self.remove_node(to_replace)
+                    self.add_edge(new_edge)
+                #print("Adding:", new_edge)
+                
+            #print("Removing:", edge)
+            #self.remove_edge(edge)
+        
 
 
     def show(self):

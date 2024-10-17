@@ -50,7 +50,7 @@ class Planner(Worker):
             graph_context=graph.build_context()
         ).render()
 
-        print("Planning prompt:", prompt, sep="\n")
+        #print("Planning prompt:", prompt, sep="\n")
 
         resp = await FAST_LLM.with_structured_output(Output).ainvoke(prompt)
 
@@ -77,12 +77,12 @@ class IntermediateProductBuilder(Worker):
             intermediate_products="\n".join([node.content() for node in filter(lambda n: isinstance(n, ProductNode), graph.get_nodes())])
         ).render()
 
-        print("IP Builder prompt:", prompt, sep="\n")
+        #print("IP Builder prompt:", prompt, sep="\n")
     
         resp = await FAST_LLM.with_structured_output(Output).ainvoke(
             prompt
         )
-        print(resp)
+        #print(resp)
         # "ProductNode" feels very silly
         dest_node = ProductNode(resp.result.id, resp.result.content)
 
@@ -105,7 +105,7 @@ class AssumptionBuilder(Worker):
             graph_context=context
         ).render()
 
-        print("Assumption Builder prompt:", prompt, sep="\n")
+        #print("Assumption Builder prompt:", prompt, sep="\n")
 
         class Assumption(BaseModel):
             id: str
@@ -117,7 +117,7 @@ class AssumptionBuilder(Worker):
         resp = await FAST_LLM.with_structured_output(Output).ainvoke(
             prompt
         )
-        print(resp)
+        #print(resp)
 
         for item in resp.assumptions:
             new_node = AssumptionNode(item.id, item.description)
