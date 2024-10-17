@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 from fs.base import FS
 from fs.memoryfs import MemoryFS
@@ -71,7 +72,26 @@ class WorkspaceConnector(Worker):
         # Query graph for action definitions
         action_def_nodes: list[ActionDefinitionNode] = graph.query_nodes_by_tag("action_definition")
         # Schemas for each action definition
-        action_schemas = [node.schema for node in action_def_nodes]
+        #action_schemas = [node.schema for node in action_def_nodes]
+
+        action_schemas = []
+        for node in action_def_nodes:
+            modified_param_schemas = {}
+            for param, param_schema in node.schema.items():
+                modified_param_schemas[param] = {
+                    "oneOf": [
+                        param_schema,
+                        #{"type": "object", "properties": {"dummy": {"type": "string", "description": "Describe how this input should be filled in later."}}}
+                        {"type": "string", "const": "UNKNOWN"}
+                    ]
+                }
+            action_schemas.append(modified_param_schemas)
+            # action_schemas.append({
+            #     "oneOf": [
+            #         node.schema,
+
+            #     ]
+            # })
 
         action_node_schemas = []
         for input_schema in action_schemas:
@@ -82,7 +102,8 @@ class WorkspaceConnector(Worker):
                     "action_id": {"type": "string"},
                     "action_input": {
                         "type": "object",
-                        "properties": input_schema
+                        "properties": input_schema,
+                        "description": "Input for the action. Only include parameters if known right now, otherwise provide UNKNOWN."
                         # no "required" array so inputs optional
                     }
                 },
@@ -103,6 +124,8 @@ class WorkspaceConnector(Worker):
             },
             "required": ["action_uses"]
         }
+
+        print(json.dumps(schema, indent=4))
 
         print("Action connection prompt:", prompt, sep="\n")
 
@@ -130,8 +153,8 @@ class WorkspaceConnector(Worker):
         # Choose task to decompose
         # tmp
         #task_node = graph.query_node_by_id("read_student_papers")
-        #task_nodes = set(filter(lambda node: node.id != "final_goal", graph.query_nodes_by_tag("task")))
-        task_nodes = [graph.query_node_by_id("write_grades_to_file")]#, graph.query_node_by_id("grade_student_papers")]
+        task_nodes = set(filter(lambda node: node.id != "final_goal" and node.id != "grade_student_papers", graph.query_nodes_by_tag("task")))
+        #task_nodes = [graph.query_node_by_id("write_grades_to_file")]#, graph.query_node_by_id("grade_student_papers")]
         #jobs = []
         # Possibly some concurrent operations could be iffy on shared graph structure
         for task_node in task_nodes:
@@ -140,108 +163,3 @@ class WorkspaceConnector(Worker):
         
         #await asyncio.gather(*jobs)
 
-
-        
-
-
-
-
-
-    async def bad_cycle(self, graph: Graph):
-        # Query graph for action definitions
-        action_def_nodes: list[ActionDefinitionNode] = graph.query_nodes_by_tag("action_definition")
-        # Schemas for each action definition
-        action_schemas = [node.schema for node in action_def_nodes]
-
-        action_node_schemas = []
-        for input_schema in action_schemas:
-            action_node_schemas.append({
-                "type": "object",
-                "properties": {
-                    "node_id": {"type": "string"},
-                    "action_definition_node_id": {"type": "string"},
-                    "action_input": {
-                        "type": "object",
-                        "properties": input_schema
-                        # no "required" array so inputs optional
-                    },
-                    "downstream_dependent_task_ids": {
-                        "type": "array",
-                        "items": {"type": "string"}
-                    },
-                    "upstream_dependency_task_ids": {
-                        "type": "array",
-                        "items": {"type": "string"}
-                    },
-                },
-                "required": ["node_id", "action_definition_node_id", "action_input", "downstream_dependent_task_ids", "upstream_dependency_task_ids"]
-            })
-
-        schema = {
-            "title": "action_use_response",
-            "description": "Generate ActionUse nodes and edges",
-            "type": "object",
-            "properties": {
-                "action_uses": {
-                    "type": "array",
-                    "items": {
-                        "oneOf": action_node_schemas
-                    }
-                },
-                # "edges": {
-                #     "type": "array",
-                #     "items": {
-                #         "type": "object",
-                #         "properties": {
-                #             "from_id": {"type": "string"},
-                #             "to_id": {"type": "string"}
-                #         },
-                #         "required": ["from_id", "to_id"]
-                #     }
-                # }
-            },
-            "required": ["action_uses"]#, "edges"]
-        }
-
-        context = graph.build_context()
-        
-        prompt = templates.PlanAction(
-            goal=graph.goal,
-            graph_context=context,
-            action_definition_node_ids="\n".join([node.id for node in graph.query_nodes_by_tag("action_definition")]),
-            task_node_ids="\n".join([node.id for node in graph.query_nodes_by_tag("task")]),
-        ).render()
-
-        print("Action connection prompt:", prompt, sep="\n")
-
-        resp = await FAST_LLM.with_structured_output(schema).ainvoke(prompt)
-
-        print(resp)
-
-        # Build action use nodes
-        for item in resp["action_uses"]:
-            node_id = item["node_id"]
-            node = ActionUseNode(node_id, item["action_input"])
-            action_def_id = item["action_definition_node_id"]
-            downstream_task_ids = item["downstream_dependent_task_ids"]
-            upstream_task_ids = item["upstream_dependency_task_ids"]
-
-            graph.add_node(node)
-
-            graph.add_edge_by_ids(action_def_id, "definition", node_id)
-            for task_id in downstream_task_ids:
-                graph.add_edge_by_ids(node_id, "helps complete", task_id)
-            for task_id in upstream_task_ids:
-                graph.add_edge_by_ids(task_id, "required for", node_id)
-        
-        # for item in resp["edges"]:
-        #     # todo: relation could be either input dependency, or action task resolve, ...
-        #     # maybe separate edges in structured out
-        #     # or maybe should be separate prompts/workers
-        #     graph.add_edge_by_ids(item["from_id"], "action", item["to_id"])
-
-        # # Build subgraph, todo: could create utils for creating subgraph as structured out
-        # for item in resp.nodes:
-        #     graph.add_node(TaskNode(item.id, item.content))
-        # for item in resp.edges:
-        #     graph.add_edge_by_ids(item.from_id, "dependency", item.to_id)

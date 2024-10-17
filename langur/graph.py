@@ -1,6 +1,7 @@
 # For vis
 from abc import ABC, abstractmethod
 import asyncio
+import copy
 import json
 from typing import Callable, Type
 import networkx as nx
@@ -148,6 +149,7 @@ class ActionDefinitionNode(Node):
 class Edge:
     '''Knowledge Graph Edge'''
     def __init__(self, src_node: Node, relation: str, dest_node: Node, bidirectional=False):
+        # note: don't reassign src_node / dest_node directly cus edges wont be tracked correctly, should redesign to make this clearer
         self.src_node = src_node
         self.dest_node = dest_node
         self.relation = relation
@@ -160,13 +162,16 @@ class Edge:
     def __eq__(self, other):
         if not isinstance(other, Edge):
             return False
-        return hash(self) == hash(other)
+        # There are cases where multiple nodes have same ID, so check node refs here
+        return (self.src_node, self.relation, self.dest_node) == (other.src_node, other.relation, other.dest_node)
+        #return hash(self) == hash(other)
 
     def __str__(self):
         return f"{self.src_node.id} {self.relation} {self.dest_node.id}"
 
-    def copy(self):
-        return Edge(self.src_node, self.relation, self.dest_node)
+    # def copy(self):
+    #     #return copy.deepcopy(self)
+    #     return Edge(self.src_node, self.relation, self.dest_node)
 
     def __repr__(self) -> str:
         #return f"<{self.__class__.__name__} {self.src_node.id} --{self.relation}--> {self.dest_node.id}>"
@@ -242,21 +247,33 @@ class Graph:
         edge.src_node.edges.remove(edge)
         edge.dest_node.edges.remove(edge)
         self.edges.remove(edge)
+    
+    def remove_node(self, node: Node):
+        for edge in node.edges:
+            self.remove_edge(edge)
+        del self._node_map[node.id]
 
     def substitute(self, node_id: str, replacements: list[Node]):
         '''Replace a node by swapping it out for one or more nodes, which will each assume all incoming and outgoing edges of the replaced node'''
         to_replace = self.query_node_by_id(node_id)
         # copy cus deleting as we go
         to_replace_edges_copy = to_replace.edges.copy()
+        print(to_replace_edges_copy)
         for edge in to_replace_edges_copy:
+            print("Edge:", edge)
             for node in replacements:
-                new_edge = edge.copy()
-                if to_replace == new_edge.src_node:
-                    new_edge.src_node = node
+                #new_edge = edge.copy()
+                if to_replace == edge.src_node:
+                    #new_edge.src_node = node
+                    new_edge = Edge(node, edge.relation, edge.dest_node)
                 else:
-                    new_edge.dest_node = node
+                    #new_edge.dest_node = node
+                    new_edge = Edge(edge.src_node, edge.relation, node)
+                print("Adding:", new_edge)
                 self.add_edge(new_edge)
+            print("Removing:", edge)
             self.remove_edge(edge)
+        self.remove_node(to_replace)
 
 
     def show(self):

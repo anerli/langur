@@ -21,7 +21,6 @@ When you create an action you must include:
 Here are the ActionDefinition node IDs available:
 {{action_definition_node_ids}}
 
-**action_input**: You may provide or omit each parameter of the action input. Provide the parameter if it is clear right now what it should be. Omit it if the input parameter depends on an upstream task.
-If omitting, DO NOT leave a dummy value, be sure not to provide it AT ALL.
+**action_input**: You may provide or omit each parameter of the action input. Provide the parameter ONLY IF it is clear right now what it should be. Otherwise, provide the string "UNKNOWN".
 Upstream tasks for reference:
 {{upstream_tasks}}
