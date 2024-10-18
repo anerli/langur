@@ -13,15 +13,14 @@ When you create an action you must include:
 
 **node_id**: a unique natural language ID in lower_snake_case describing the action use
 
-**action_id**: The Node ID of the ActionDefinition node corresponding to this ActionUse node.
-Here are the ActionDefinition nodes available:
+**action_type**: The type identifier for the action being used, from these available types:
 {{action_definitions}}
 
-**action_input**: You may provide or omit each parameter of the action input. Provide the parameter ONLY IF it is clear right now what it should be.
+**action_input**: For each input parameter, either provide the input value if known, or do not include at all if it depends on another result.
 
 **upstream_action_ids**: Define which actions the action depends on, from these upstream actions OR from other ones you generate:
 {{upstream_actions}}
 
-When creating actions, DO NOT re-create any of the existing upstream actions.
+These upstream actions have already been created, do not include them in your response.
 
 Your specific task to break down is: {{task}}

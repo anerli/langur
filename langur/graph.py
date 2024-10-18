@@ -9,10 +9,14 @@ from ipysigma import Sigma
 from pydantic import BaseModel
 from .llm import FAST_LLM
 from .prompts import templates
+from langchain_core.language_models.chat_models import BaseChatModel
 
 NODE_TASK = "TASK"
 # Intermediate Product
 NODE_IP = "INTERMEDIATE_PRODUCT"
+
+class NodeCollisionError(RuntimeError):
+    pass
 
 
 class Node():
@@ -185,7 +189,8 @@ class Edge:
     
 class Graph:
     '''Knowledge Graph / Task Graph'''
-    def __init__(self, goal: str):
+    def __init__(self, goal: str, llm: BaseChatModel):
+        self.llm = llm
         self.goal = goal
         self.goal_node = TaskNode("final_goal", goal, [])
         self._node_map: dict[str, Node] = {}
@@ -197,7 +202,7 @@ class Graph:
 
     def add_node(self, node: Node):
         if node.id in self._node_map:
-            raise RuntimeError("ID collision when adding node:", node)
+            raise NodeCollisionError("Node ID collision when adding node:", node)
         self._node_map[node.id] = node
         #self.nodes.add(node)
     
@@ -268,7 +273,7 @@ class Graph:
     #     node.id = new_id
     #     self._node_map[new_id] = node
 
-    def substitute(self, node_id: str, replacements: list[Node], keep_incoming=True, keep_outgoing=True):
+    def substitute(self, node_id: str, replacements: list[Node], keep_incoming=True, keep_outgoing=True):#, ignore_dupe_ids=False):
         '''Replace a node by swapping it out for one or more nodes, which will each assume all incoming and outgoing edges of the replaced node'''
         to_replace = self.query_node_by_id(node_id)
         # basically a hack to avoid ID collisions when replacements have same ID
@@ -277,14 +282,25 @@ class Graph:
         to_replace_edges_copy = to_replace.edges.copy()
         self.remove_node(to_replace)
 
-        print(self.query_node_by_id("B"))
+        #print(self.query_node_by_id("B"))
         #print(to_replace_edges_copy)
         
             #print("Edge:", edge)
         for node in replacements:
-            print("Replacement:", node)
-            print(self.query_node_by_id("B"))
+            #print("Replacement:", node)
+            #print(self.query_node_by_id("B"))
+
             self.add_node(node)
+            # try:
+            #     self.add_node(node)
+            # except NodeCollisionError as e:
+            #     if ignore_dupe_ids:
+            #         print("Ignored duplicate ID substitute node:", node)
+            #         continue
+            #     else:
+            #         raise e
+            # print("foo")
+
             for edge in to_replace_edges_copy:
                 
                 #new_edge = edge.copy()

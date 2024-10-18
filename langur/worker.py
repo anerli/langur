@@ -54,7 +54,7 @@ class Planner(Worker):
 
         #print("Planning prompt:", prompt, sep="\n")
 
-        resp = await FAST_LLM.with_structured_output(Output).ainvoke(prompt)
+        resp = await graph.llm.with_structured_output(Output).ainvoke(prompt)
 
         added_nodes = []
 
@@ -92,7 +92,7 @@ class IntermediateProductBuilder(Worker):
 
         #print("IP Builder prompt:", prompt, sep="\n")
     
-        resp = await FAST_LLM.with_structured_output(Output).ainvoke(
+        resp = await graph.llm.with_structured_output(Output).ainvoke(
             prompt
         )
         #print(resp)
@@ -127,7 +127,7 @@ class AssumptionBuilder(Worker):
         class Output(BaseModel):
             assumptions: list[Assumption]
 
-        resp = await FAST_LLM.with_structured_output(Output).ainvoke(
+        resp = await graph.llm.with_structured_output(Output).ainvoke(
             prompt
         )
         #print(resp)

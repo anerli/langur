@@ -82,7 +82,7 @@ class WorkspaceConnector(Worker):
                 #     "oneOf": [
                 #         param_schema,
                 #         #{"type": "object", "properties": {"dummy": {"type": "string", "description": "Describe how this input should be filled in later."}}}
-                #         {"type": "string", "const": "UNKNOWN"}
+                #         {"type": "string", "const": "DEPENDS"}
                 #     ]
                 # }
             action_schemas.append(modified_param_schemas)
@@ -99,16 +99,16 @@ class WorkspaceConnector(Worker):
                 "type": "object",
                 "properties": {
                     "node_id": {"type": "string", "description": "UNIQUE node ID. DO NOT reuse any IDs you have seen before."},
-                    "action_id": {"type": "string"},
+                    "action_type": {"type": "string"},
                     "action_input": {
                         "type": "object",
                         "properties": input_schema,
-                        "description": "Input for the action. Only include parameters if known right now, otherwise provide UNKNOWN."
+                        "description": "Input for the action. For each parameter, include it if known right now, otherwise omit it completely."#, otherwise put \"DEPENDS\"."
                         # no "required" array so inputs optional
                     },
                     "upstream_action_ids": {"type": "array", "items": {"type": "string"}},
                 },
-                "required": ["node_id", "action_definition_node_id", "action_input", "upstream_action_ids"]
+                "required": ["node_id", "action_type", "action_input", "upstream_action_ids"]
             })
 
         schema = {
@@ -153,13 +153,28 @@ class WorkspaceConnector(Worker):
 
         print("Action connection prompt:", prompt, sep="\n")
 
-        resp = await FAST_LLM.with_structured_output(schema).ainvoke(prompt)
+        resp = await graph.llm.with_structured_output(schema).ainvoke(prompt)
 
         print(resp)
 
+        deduped_action_uses = []
+        # Remove any nodes whose ID already exists - LLM likes to re-create upstream action nodes sometimes
+        for item in resp["action_uses"]:
+            existing = graph.query_node_by_id(item["node_id"])
+            if item["node_id"] == task_node.id or existing is None:
+                # We allow it to replace task node with action node with same ID
+                deduped_action_uses.append(item)
+            else:
+                if "action" in existing.get_tags():
+                    # Common LLM sillyness that we simply ignore since it hasn't seemed to indicate poor performance otherwise
+                    print("Generated action node with existing ID ignored:", existing.id)
+                else:
+                    # This suggests some missing context with respect to other nodes in the graph, or a failure to create sufficiently descriptive or unique IDs.
+                    raise RuntimeError("Generated action node with same ID as non-action node:", existing, item)
+
         # Build action use nodes
         action_use_nodes = []
-        for item in resp["action_uses"]:
+        for item in deduped_action_uses:
             #item["node_id"] = f'{task_node.id}::{item["node_id"]}'
             node_id = item["node_id"]
             node = ActionUseNode(node_id, item["action_input"])
@@ -168,20 +183,20 @@ class WorkspaceConnector(Worker):
         # Substitute the task node for the action nodes, keeping incoming/outgoing edges
         graph.substitute(task_node.id, action_use_nodes, keep_incoming=False, keep_outgoing=True)
 
-        for item in resp["action_uses"]:
-            print("?", graph.query_node_by_id(item["node_id"]))
+        # for item in deduped_action_uses:
+        #     print("?", graph.query_node_by_id(item["node_id"]))
 
         # Add generated deps
-        for item in resp["action_uses"]:
+        for item in deduped_action_uses:
             for upstream_id in item["upstream_action_ids"]:
                 graph.add_edge_by_ids(upstream_id, "gen dep", item["node_id"])
         
-        for item in resp["action_uses"]:
-            print("?", graph.query_node_by_id(item["node_id"]))
+        # for item in deduped_action_uses:
+        #     print("?", graph.query_node_by_id(item["node_id"]))
 
         # Add definition edges once substitution is complete
-        for item in resp["action_uses"]:
-            action_def_id = item["action_id"]
+        for item in deduped_action_uses:
+            action_def_id = item["action_type"]
             graph.add_edge_by_ids(action_def_id, "definition", item["node_id"])
 
 
