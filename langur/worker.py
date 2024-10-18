@@ -36,6 +36,7 @@ class Planner(Worker):
         class NodeItem(BaseModel):
             id: str
             content: str
+            action_types: list[str]
 
         class EdgeItem(BaseModel):
             from_id: str
@@ -47,18 +48,30 @@ class Planner(Worker):
         
         prompt = templates.Planner(
             goal=graph.goal,
-            graph_context=graph.build_context()
+            graph_context=graph.build_context(),
+            action_types="\n".join([f"- {node.id}" for node in graph.query_nodes_by_tag("action_definition")])
         ).render()
 
         #print("Planning prompt:", prompt, sep="\n")
 
         resp = await FAST_LLM.with_structured_output(Output).ainvoke(prompt)
 
+        added_nodes = []
+
         # Build subgraph, todo: could create utils for creating subgraph as structured out
         for item in resp.nodes:
-            graph.add_node(TaskNode(item.id, item.content))
+            node = TaskNode(item.id, item.content, item.action_types)
+            graph.add_node(node)
+            added_nodes.append(node)
         for item in resp.edges:
             graph.add_edge_by_ids(item.from_id, "dependency", item.to_id)
+        
+        # Finally, for any nodes with no generated outgoing edges, we connect them to final_goal
+        goal_node = graph.query_node_by_id("final_goal")
+        for node in added_nodes:
+            if len(node.downstream_nodes()) == 0:
+                graph.add_edge(Edge(node, "achieves", goal_node))
+        
 
 
 class IntermediateProductBuilder(Worker):

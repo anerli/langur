@@ -26,6 +26,7 @@ class Assumptions(Template):
 class Planner(Template):
     goal: str
     graph_context: str
+    action_types: str
 
 class PlanAction(Template):
     goal: str

@@ -12,5 +12,6 @@ You can do this by creating nodes, each of which defines a subtasks, and edges, 
 In an edge dependency relation, you should choose the direction such that the FROM node should be completed before the TO node.
 Please capture all relevant dependency relations with edges.
 Design each subtask by observing the available actions and resources in the graph, and be as specific as possible.
-Finally, make sure to connect FROM subtasks in the graph TO the "final_goal" node when appropriate - you should make at least one such connection, but only for direct dependencies.
 When you create a node, give each a natural language ID in lower_snake_case, as well as the content of the subtask itself.
+For each node, provide also the action types required to execute the subtask from the following:
+{{action_types}}

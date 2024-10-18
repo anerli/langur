@@ -90,9 +90,15 @@ class StaticNode(Node):
     def content(self):
         return self._content
 
-class TaskNode(StaticNode):
+class TaskNode(Node):
     tags = ["task"]
-    pass
+    def __init__(self, id: str, content: str, action_types: list[str]):
+        super().__init__(id)
+        self._content = content
+        self.action_types = action_types
+    
+    def content(self):
+        return f"{self._content} {self.action_types}"
 
 class ActionUseNode(Node):
     tags = ["action"]
@@ -181,7 +187,7 @@ class Graph:
     '''Knowledge Graph / Task Graph'''
     def __init__(self, goal: str):
         self.goal = goal
-        self.goal_node = TaskNode("final_goal", goal)
+        self.goal_node = TaskNode("final_goal", goal, [])
         self._node_map: dict[str, Node] = {}
         self.edges: set[Edge] = set()
         self.add_node(self.goal_node)
