@@ -9,8 +9,6 @@ You are planning out the execution of specific actions to help accomplish the go
 Given a specific Task node, your job is to convert it into specific ActionUse nodes, representing distinct uses of various available actions.
 Create actions such that when executed, they will complete the task.
 
-Your specific task to break down is: {{task}}
-
 When you create an action you must include:
 
 **node_id**: a unique natural language ID in lower_snake_case describing the action use
@@ -25,3 +23,5 @@ Here are the ActionDefinition nodes available:
 {{upstream_actions}}
 
 When creating actions, DO NOT re-create any of the existing upstream actions.
+
+Your specific task to break down is: {{task}}

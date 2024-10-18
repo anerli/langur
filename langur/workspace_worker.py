@@ -76,13 +76,15 @@ class WorkspaceConnector(Worker):
         for node in action_def_nodes:
             modified_param_schemas = {}
             for param, param_schema in node.schema.items():
-                modified_param_schemas[param] = {
-                    "oneOf": [
-                        param_schema,
-                        #{"type": "object", "properties": {"dummy": {"type": "string", "description": "Describe how this input should be filled in later."}}}
-                        {"type": "string", "const": "UNKNOWN"}
-                    ]
-                }
+                modified_param_schemas[param] = param_schema
+                # nevermind, maybe it does work without dummy? idk mini doesn't listen to this modified schema anyway
+                # modified_param_schemas[param] = {
+                #     "oneOf": [
+                #         param_schema,
+                #         #{"type": "object", "properties": {"dummy": {"type": "string", "description": "Describe how this input should be filled in later."}}}
+                #         {"type": "string", "const": "UNKNOWN"}
+                #     ]
+                # }
             action_schemas.append(modified_param_schemas)
             # action_schemas.append({
             #     "oneOf": [
@@ -145,7 +147,8 @@ class WorkspaceConnector(Worker):
             #upstream_tasks="\n".join([f"- {node.id}: {node.content()}" for node in filter(lambda n: "task" in n.get_tags(), task_node.upstream_nodes())]),
             #upstream_actions="\n".join([f"{node.content()}" for node in filter(lambda n: "action" in n.get_tags(), task_node.upstream_nodes())]),
             # Because we start with upstream decomp, these should all be upstream deps
-            upstream_actions="\n".join([f"{node.content()}" for node in graph.query_nodes_by_tag("action")]),
+            #upstream_actions="\n".join([f"{node.content()}" for node in graph.query_nodes_by_tag("action")]),
+            upstream_actions="\n".join([f"- {node.id}" for node in graph.query_nodes_by_tag("action")]),
         ).render()
 
         print("Action connection prompt:", prompt, sep="\n")
