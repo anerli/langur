@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from .graph import AssumptionNode, Graph, Node, Edge, NODE_IP, NODE_TASK, ProductNode, TaskNode
 from .llm import FAST_LLM
 from .prompts import templates
+from langur.baml_client import b
 
 class Worker(ABC):
     '''Meta-cognitive Worker'''
@@ -33,29 +34,37 @@ class Planner(Worker):
     async def setup(self, graph: Graph):
         # Late setup to have knowledge for available actions etc.
         # Create a subgraph of subtasks with dependency relations as edges, connected to the final goal.
-        class NodeItem(BaseModel):
-            id: str
-            content: str
-            action_types: list[str]
+        # class NodeItem(BaseModel):
+        #     id: str
+        #     content: str
+        #     action_types: list[str]
 
-        class EdgeItem(BaseModel):
-            from_id: str
-            to_id: str
+        # class EdgeItem(BaseModel):
+        #     from_id: str
+        #     to_id: str
         
-        class Output(BaseModel):
-            nodes: list[NodeItem]
-            edges: list[EdgeItem]
+        # class Output(BaseModel):
+        #     nodes: list[NodeItem]
+        #     edges: list[EdgeItem]
         
-        prompt = templates.Planner(
+        # print("CTX:", graph.build_context(), sep="\n")
+        # print("ATYPES:", "\n".join([f"- {node.id}" for node in graph.query_nodes_by_tag("action_definition")]), sep="\n")
+        
+        # prompt = templates.Planner(
+        #     goal=graph.goal,
+        #     graph_context=graph.build_context(),
+        #     action_types="\n".join([f"- {node.id}" for node in graph.query_nodes_by_tag("action_definition")])
+        # ).render()
+
+        # resp = await graph.llm.with_structured_output(Output).ainvoke(prompt)
+
+        resp = b.PlanSubtasks(
             goal=graph.goal,
             graph_context=graph.build_context(),
             action_types="\n".join([f"- {node.id}" for node in graph.query_nodes_by_tag("action_definition")])
-        ).render()
+        )
 
-        #print("Planning prompt:", prompt, sep="\n")
-
-        resp = await graph.llm.with_structured_output(Output).ainvoke(prompt)
-        #resp = await graph.llm.with_structured_output(Output, strict=True).ainvoke(prompt)
+        #print(resp)
 
         added_nodes = []
 
