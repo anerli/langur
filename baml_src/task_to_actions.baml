@@ -44,6 +44,7 @@ function TaskToActions (goal: string, observables: string, task: string, action_
     "#
 }
 
+// Doesn't work cus we can't define the @@dynamic action_input property for the test case in here
 test write_grades {
   functions [TaskToActions]
   args {

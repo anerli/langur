@@ -1,23 +1,12 @@
 # For vis
-from abc import ABC, abstractmethod
-import asyncio
-import copy
+from abc import abstractmethod
 import json
-from typing import Callable, Type
+from typing import Callable
 import networkx as nx
 from ipysigma import Sigma
-from pydantic import BaseModel
-from .llm import FAST_LLM
-from .prompts import templates
-from langchain_core.language_models.chat_models import BaseChatModel
-
-NODE_TASK = "TASK"
-# Intermediate Product
-NODE_IP = "INTERMEDIATE_PRODUCT"
 
 class NodeCollisionError(RuntimeError):
     pass
-
 
 class Node():
     tags = []
@@ -125,12 +114,6 @@ class ActionUseNode(Node):
             #"thoughts": self.thoughts
         }
 
-class AssumptionNode(StaticNode):
-    pass
-
-class ProductNode(StaticNode):
-    pass
-
 class ActionDefinitionNode(Node):
     tags = ["action_definition"]
 
@@ -155,9 +138,6 @@ class ActionDefinitionNode(Node):
             "schema": formatted_schema
         }
 
-# class DynamicNode(Node):
-#     def __init__
-
 class Edge:
     '''Knowledge Graph Edge'''
     def __init__(self, src_node: Node, relation: str, dest_node: Node, bidirectional=False):
@@ -181,18 +161,13 @@ class Edge:
     def __str__(self):
         return f"{self.src_node.id} {self.relation} {self.dest_node.id}"
 
-    # def copy(self):
-    #     #return copy.deepcopy(self)
-    #     return Edge(self.src_node, self.relation, self.dest_node)
-
     def __repr__(self) -> str:
         #return f"<{self.__class__.__name__} {self.src_node.id} --{self.relation}--> {self.dest_node.id}>"
         return f"Edge('{self.src_node.id}'-[{self.relation}]->'{self.dest_node.id}')"
     
 class Graph:
     '''Knowledge Graph / Task Graph'''
-    def __init__(self, goal: str, llm: BaseChatModel):
-        self.llm = llm
+    def __init__(self, goal: StopIteration):
         self.goal = goal
         self.goal_node = TaskNode("final_goal", goal, [])
         self._node_map: dict[str, Node] = {}
@@ -268,47 +243,17 @@ class Graph:
         for edge in edges:
             self.remove_edge(edge)
         del self._node_map[node.id]
-    
-    # NOPE breaks edge hashes and crap
-    # def change_node_id(self, node: Node, new_id: str):
-    #     del self._node_map[node.id]
-    #     node.id = new_id
-    #     self._node_map[new_id] = node
 
     def substitute(self, node_id: str, replacements: list[Node], keep_incoming=True, keep_outgoing=True):#, ignore_dupe_ids=False):
         '''Replace a node by swapping it out for one or more nodes, which will each assume all incoming and outgoing edges of the replaced node'''
         to_replace = self.query_node_by_id(node_id)
-        # basically a hack to avoid ID collisions when replacements have same ID
-        #self.change_node_id(to_replace, "REPLACING")
         # copy cus deleting as we go
         to_replace_edges_copy = to_replace.edges.copy()
         self.remove_node(to_replace)
 
-        #print(self.query_node_by_id("B"))
-        #print(to_replace_edges_copy)
-        
-            #print("Edge:", edge)
         for node in replacements:
-            #print("Replacement:", node)
-            #print(self.query_node_by_id("B"))
-
             self.add_node(node)
-            # try:
-            #     self.add_node(node)
-            # except NodeCollisionError as e:
-            #     if ignore_dupe_ids:
-            #         print("Ignored duplicate ID substitute node:", node)
-            #         continue
-            #     else:
-            #         raise e
-            # print("foo")
-
             for edge in to_replace_edges_copy:
-                
-                #new_edge = edge.copy()
-                #if node.id == to_replace.id
-                
-                
                 if to_replace == edge.src_node and keep_outgoing:
                     #new_edge.src_node = node
                     new_edge = Edge(node, edge.relation, edge.dest_node)
@@ -317,12 +262,6 @@ class Graph:
                     #new_edge.dest_node = node
                     new_edge = Edge(edge.src_node, edge.relation, node)
                     self.add_edge(new_edge)
-                #print("Adding:", new_edge)
-                
-            #print("Removing:", edge)
-            #self.remove_edge(edge)
-        
-
 
     def show(self):
         return Sigma(
@@ -342,13 +281,6 @@ class Graph:
         for edge in self.edges:
             s += f"{edge.src_node.id}->{edge.dest_node.id}\n"
         return s
-
-    # def query(self, filter_tags: list[str] = None):
-    #     if filter_tags is None:
-    #         nodes = self.get_nodes()
-    #     else:
-    #         nodes = self.query_nodes_by_tag(*filter_tags)
-    #     return nodes
 
     def build_context(self, *nodes: Node):
         '''

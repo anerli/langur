@@ -8,13 +8,12 @@ from langur.graph import Graph
 from langchain_core.language_models.chat_models import BaseChatModel
 
 class Langur:
-    def __init__(self, goal: str, llm: BaseChatModel):
+    def __init__(self, goal: str):
         # TODO: eventually make so one agent can do various goals thus re-using brain state pathways etc cleverly
         self.world = World()
         self.goal = goal
-        self.graph = Graph(goal, llm)
+        self.graph = Graph(goal)
         self.workers = []
-        self.llm = llm
     
     def use(self, *connectors: Connector):
         for connector in connectors:

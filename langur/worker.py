@@ -1,9 +1,5 @@
-import asyncio
-from abc import ABC, abstractmethod
-from pydantic import BaseModel, Field
-from .graph import AssumptionNode, Graph, Node, Edge, NODE_IP, NODE_TASK, ProductNode, TaskNode
-from .llm import FAST_LLM
-from .prompts import templates
+from abc import ABC
+from .graph import Graph, Edge, TaskNode
 from langur.baml_client import b
 
 class Worker(ABC):
@@ -34,30 +30,6 @@ class Planner(Worker):
     async def setup(self, graph: Graph):
         # Late setup to have knowledge for available actions etc.
         # Create a subgraph of subtasks with dependency relations as edges, connected to the final goal.
-        # class NodeItem(BaseModel):
-        #     id: str
-        #     content: str
-        #     action_types: list[str]
-
-        # class EdgeItem(BaseModel):
-        #     from_id: str
-        #     to_id: str
-        
-        # class Output(BaseModel):
-        #     nodes: list[NodeItem]
-        #     edges: list[EdgeItem]
-        
-        # print("CTX:", graph.build_context(), sep="\n")
-        # print("ATYPES:", "\n".join([f"- {node.id}" for node in graph.query_nodes_by_tag("action_definition")]), sep="\n")
-        
-        # prompt = templates.Planner(
-        #     goal=graph.goal,
-        #     graph_context=graph.build_context(),
-        #     action_types="\n".join([f"- {node.id}" for node in graph.query_nodes_by_tag("action_definition")])
-        # ).render()
-
-        # resp = await graph.llm.with_structured_output(Output).ainvoke(prompt)
-
         resp = await b.PlanSubtasks(
             goal=graph.goal,
             graph_context=graph.build_context(),
@@ -81,68 +53,3 @@ class Planner(Worker):
         for node in added_nodes:
             if len(node.downstream_nodes()) == 0:
                 graph.add_edge(Edge(node, "achieves", goal_node))
-        
-
-
-class IntermediateProductBuilder(Worker):
-    async def cycle(self, graph: Graph):
-        class Node(BaseModel):
-            id: str# = Field("id of dependency node")
-            content: str
-        
-        class Output(BaseModel):
-            dependency_ids: list[str]
-            result: Node
-
-        prompt = templates.FrontSearch(
-            goal=graph.goal,
-            graph_context=graph.build_context(),# TODO what types of nodes do we want here? tmp wildcard
-            intermediate_products="\n".join([node.content() for node in filter(lambda n: isinstance(n, ProductNode), graph.get_nodes())])
-        ).render()
-
-        #print("IP Builder prompt:", prompt, sep="\n")
-    
-        resp = await graph.llm.with_structured_output(Output).ainvoke(
-            prompt
-        )
-        #print(resp)
-        # "ProductNode" feels very silly
-        dest_node = ProductNode(resp.result.id, resp.result.content)
-
-        for dep_id in resp.dependency_ids:
-            src_node = graph.query_node_by_id(dep_id)
-            if src_node is None:
-                raise RuntimeError(f"No existing node with ID `{dep_id}`")
-            graph.add_edge(Edge(src_node, "needed for", dest_node))
-
-class AssumptionBuilder(Worker):
-    def get_setup_order(self) -> int:
-        return 50
-
-    async def setup(self, graph: Graph):
-        goal_node = graph.query_node_by_id("final_goal")
-        context = graph.build_context()
-
-        prompt = templates.Assumptions(
-            goal=graph.goal,
-            graph_context=context
-        ).render()
-
-        #print("Assumption Builder prompt:", prompt, sep="\n")
-
-        class Assumption(BaseModel):
-            id: str
-            description: str
-        
-        class Output(BaseModel):
-            assumptions: list[Assumption]
-
-        resp = await graph.llm.with_structured_output(Output).ainvoke(
-            prompt
-        )
-        #print(resp)
-
-        for item in resp.assumptions:
-            new_node = AssumptionNode(item.id, item.description)
-            graph.add_node(new_node)
-            graph.add_edge(Edge(new_node, "assumption", goal_node))
