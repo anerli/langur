@@ -98,8 +98,17 @@ class WorkspaceConnector(Worker):
             action_node_schemas.append({
                 "type": "object",
                 "properties": {
+                    #"thoughts": {"type": "string", "description": "Think about how to build this node and what inputs to populate now or leave out."},
                     "node_id": {"type": "string", "description": "UNIQUE node ID. DO NOT reuse any IDs you have seen before."},
                     "action_type": {"type": "string"},
+                    # "inputs_included": {
+                    #     "oneOf": [
+                    #         {"type": "string", "constant": "FULL"},
+                    #         {"type": "string", "constant": "PARTIAL"},
+                    #         {"type": "string", "constant": "NONE"},
+                    #     ],
+                    #     "description": "Whether all action inputs are being provided or only some if they are to be populated later."
+                    # },
                     "action_input": {
                         "type": "object",
                         "properties": input_schema,
@@ -154,6 +163,7 @@ class WorkspaceConnector(Worker):
         print("Action connection prompt:", prompt, sep="\n")
 
         resp = await graph.llm.with_structured_output(schema).ainvoke(prompt)
+        #resp = await graph.llm.with_structured_output(schema, strict=True).ainvoke(prompt)
 
         print(resp)
 
@@ -177,7 +187,7 @@ class WorkspaceConnector(Worker):
         for item in deduped_action_uses:
             #item["node_id"] = f'{task_node.id}::{item["node_id"]}'
             node_id = item["node_id"]
-            node = ActionUseNode(node_id, item["action_input"])
+            node = ActionUseNode(node_id, item["action_input"])#, item["thoughts"])
             action_use_nodes.append(node)
         
         # Substitute the task node for the action nodes, keeping incoming/outgoing edges

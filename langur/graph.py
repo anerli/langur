@@ -107,10 +107,11 @@ class TaskNode(Node):
 class ActionUseNode(Node):
     tags = ["action"]
     
-    def __init__(self, id: str, payload: dict):
+    def __init__(self, id: str, payload: dict):#, thoughts: str):
         '''payload: empty, partial, or full input dict'''
         super().__init__(id)
         self.payload = payload
+        #self.thoughts = thoughts
     
     def content(self):
         formatted_inputs = json.dumps(self.payload)
@@ -120,7 +121,8 @@ class ActionUseNode(Node):
         formatted_inputs = json.dumps(self.payload)
         return {
             **super().get_visual_attributes(),
-            "payload": formatted_inputs
+            "payload": formatted_inputs,
+            #"thoughts": self.thoughts
         }
 
 class AssumptionNode(StaticNode):

@@ -55,6 +55,7 @@ class Planner(Worker):
         #print("Planning prompt:", prompt, sep="\n")
 
         resp = await graph.llm.with_structured_output(Output).ainvoke(prompt)
+        #resp = await graph.llm.with_structured_output(Output, strict=True).ainvoke(prompt)
 
         added_nodes = []
 
