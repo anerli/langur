@@ -58,7 +58,7 @@ class Planner(Worker):
 
         # resp = await graph.llm.with_structured_output(Output).ainvoke(prompt)
 
-        resp = b.PlanSubtasks(
+        resp = await b.PlanSubtasks(
             goal=graph.goal,
             graph_context=graph.build_context(),
             action_types="\n".join([f"- {node.id}" for node in graph.query_nodes_by_tag("action_definition")])
