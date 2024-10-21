@@ -7,7 +7,8 @@ from fs.walk import Walker
 
 from langur.baml_client.type_builder import TypeBuilder
 from .worker import Worker
-from ..graph import Graph, Node, ObservableNode
+from ..graph import Graph
+from ..graph.node import ObservableNode
 from ..actions import ActionDefinitionNode, ActionParameter, ActionUseNode
 import langur.baml_client as baml
 
@@ -93,12 +94,10 @@ class WorkspaceConnector(Worker):
                 property_builder = builder.add_property(param.param_key, param.field_type.optional())
                 if param.description:
                     property_builder.description(param.description)
-            
-            #builder.add_property("type")
-            #tb.string().
-            
             action_input_types.append(builder.type())
 
+            # TODO: Swap to literal like this and remove ActionType from baml when released
+            #builder.add_property("type", tb.literal_string(action_def_name))
             # Alternative approach is add a literal type to input builder with node id - but right now cant add literals with tb?
             tb.ActionType.add_value(action_def_name).description(action_def_node.description)
 

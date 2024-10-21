@@ -1,6 +1,13 @@
 from .worker import Worker
-from langur.graph import Graph, Node, Edge
+from langur.graph.node import Node
+from langur.graph.edge import Edge
 import langur.baml_client as baml
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from langur.graph import Graph
+
 
 class TaskNode(Node):
     tags = ["task"]
@@ -18,7 +25,7 @@ class Planner(Worker):
     def get_setup_order(self) -> int:
         return 100
     
-    async def setup(self, graph: Graph):
+    async def setup(self, graph: 'Graph'):
         # Late setup to have knowledge for available actions etc.
         # Create a subgraph of subtasks with dependency relations as edges, connected to the final goal.
         resp = await baml.b.PlanSubtasks(
