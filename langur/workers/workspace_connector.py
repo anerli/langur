@@ -84,11 +84,12 @@ class WorkspaceConnector(Worker):
         # Dynamically build action input types
         for action_def_node in action_def_nodes:
             action_def_name = action_def_node.id
+
+            builder = tb.add_class(action_def_name)
+            builder.add_property("type", tb.literal_string(action_def_name))
             
             params = action_def_node.params
 
-            builder = tb.add_class(action_def_name)
-            #for param, field_type in schema.items():
             for param in params:
                 # use field type from action def but make optional (any problems if double applied?)
                 property_builder = builder.add_property(param.param_key, param.field_type.optional())
@@ -96,10 +97,8 @@ class WorkspaceConnector(Worker):
                     property_builder.description(param.description)
             action_input_types.append(builder.type())
 
-            # TODO: Swap to literal like this and remove ActionType from baml when released
-            #builder.add_property("type", tb.literal_string(action_def_name))
             # Alternative approach is add a literal type to input builder with node id - but right now cant add literals with tb?
-            tb.ActionType.add_value(action_def_name).description(action_def_node.description)
+            #tb.ActionType.add_value(action_def_name).description(action_def_node.description)
 
         tb.Action.add_property("action_input", tb.union(action_input_types)).description("Provide inputs if known else null. Do not hallicinate values.")
         
@@ -151,7 +150,7 @@ class WorkspaceConnector(Worker):
 
         # Add definition edges once substitution is complete
         for item in deduped_action_uses:
-            action_def_id = item.action_type
+            action_def_id = item.action_input["type"]#item.action_type
             graph.add_edge_by_ids(action_def_id, "definition", item.node_id)
 
 

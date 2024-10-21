@@ -2,16 +2,16 @@
 //     @@dynamic
 // }
 
-enum ActionType {
-    // THINK @description("Do purely cognitive processing.")
-    // FILE_WRITE @description("Read and subsequently overwrite a file's contents.")
-    // FILE_READ @description("Read a single file's contents.")
-    @@dynamic
-}
+// enum ActionType {
+//     // THINK @description("Do purely cognitive processing.")
+//     // FILE_WRITE @description("Read and subsequently overwrite a file's contents.")
+//     // FILE_READ @description("Read a single file's contents.")
+//     @@dynamic
+// }
 
 class Action {
     node_id string @description("A unique natural language ID in lower_snake_case which reflects the action use.")
-    action_type ActionType
+    //action_type ActionType
     upstream_action_ids string[] @description("Define which other actions this one depends on")
     //action_input ActionInput @description("Provide inputs if known else null. Do not hallicinate values.")
     @@dynamic
