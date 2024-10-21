@@ -75,7 +75,7 @@ class WorkspaceConnector(Worker):
             builder = tb.add_class(action_def_name)
             for param in schema.keys():
                 # for now assuming string values and ignoring actual schema
-                builder.add_property(param, tb.string())
+                builder.add_property(param, tb.string().optional())
             action_types.append(builder.type())
 
         tb.Action.add_property("action_input", tb.union(action_types))
