@@ -78,7 +78,7 @@ class WorkspaceConnector(Worker):
                 builder.add_property(param, tb.string().optional())
             action_types.append(builder.type())
 
-        tb.Action.add_property("action_input", tb.union(action_types))
+        tb.Action.add_property("action_input", tb.union(action_types)).description("Provide inputs if known else null. Do not hallicinate values.")
 
         resp = await b.TaskToActions(
             goal=graph.goal,

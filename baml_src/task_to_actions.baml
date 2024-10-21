@@ -31,7 +31,7 @@ function TaskToActions (goal: string, observables: string, task: string, action_
         **action_type**: The type identifier for the action being used, from these available types:
         {{action_definitions}}
 
-        **action_input**: Provide inputs if known else null. Do not hallicinate values.
+        **action_input**: For each input parameter, either provide the input value if known, or do not include at all if it depends on another result.
 
         **upstream_action_ids**: Define which actions the action depends on, from these upstream actions OR from other ones you generate:
         {{upstream_actions}}
