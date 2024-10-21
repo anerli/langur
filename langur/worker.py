@@ -33,7 +33,8 @@ class Planner(Worker):
         resp = await b.PlanSubtasks(
             goal=graph.goal,
             graph_context=graph.build_context(),
-            action_types="\n".join([f"- {node.id}" for node in graph.query_nodes_by_tag("action_definition")])
+            action_types="\n".join([f"- {node.id}" for node in graph.query_nodes_by_tag("action_definition")]),
+            baml_options={"client_registry": graph.cr}
         )
 
         #print(resp)

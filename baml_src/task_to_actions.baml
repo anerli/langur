@@ -11,7 +11,7 @@ class Action {
 }
 
 function TaskToActions (goal: string, observables: string, task: string, action_definitions: string, upstream_actions: string) -> Action[] {
-    client Fast
+    client Default
     prompt #"
         You are a component of a graph-driven agentic LLM system.
 
@@ -35,7 +35,7 @@ function TaskToActions (goal: string, observables: string, task: string, action_
 
         **upstream_action_ids**: Define which actions the action depends on, from these upstream actions OR from other ones you generate:
         {{upstream_actions}}
-
+        
         These upstream actions have already been created, do not include them in your response.
 
         Your specific task to break down is: {{task}}

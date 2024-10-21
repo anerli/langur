@@ -2,6 +2,7 @@
 from abc import abstractmethod
 import json
 from typing import Callable
+from baml_py import ClientRegistry
 import networkx as nx
 from ipysigma import Sigma
 
@@ -167,12 +168,15 @@ class Edge:
     
 class Graph:
     '''Knowledge Graph / Task Graph'''
-    def __init__(self, goal: StopIteration):
+    def __init__(self, goal: StopIteration, cr: ClientRegistry):
         self.goal = goal
         self.goal_node = TaskNode("final_goal", goal, [])
         self._node_map: dict[str, Node] = {}
         self.edges: set[Edge] = set()
         self.add_node(self.goal_node)
+        self.cr = cr
+
+        
     
     def get_nodes(self) -> set[Node]:
         return set(self._node_map.values())
@@ -266,10 +270,10 @@ class Graph:
     def show(self):
         return Sigma(
             self.to_networkx(),
-            edge_size_range=(4, 8),
+            edge_size_range=(3, 5),
             node_size_range=(10, 16),
             start_layout=2,
-            default_edge_color="#111",
+            default_edge_color="#000000aa",
             default_node_color="#00f",
             default_node_label_size=16,
             node_color="node_class"

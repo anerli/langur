@@ -87,7 +87,8 @@ class WorkspaceConnector(Worker):
             action_definitions="\n".join([f"- {node.id}: {node.description}" for node in action_def_nodes]),
             upstream_actions="\n".join([f"- {node.id}" for node in graph.query_nodes_by_tag("action")]),
             baml_options={
-                "tb": tb
+                "tb": tb,
+                "client_registry": graph.cr
             }
         )
 
