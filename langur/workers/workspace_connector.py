@@ -8,7 +8,7 @@ from fs.walk import Walker
 from langur.baml_client.type_builder import TypeBuilder
 from .worker import Worker
 from ..graph import Graph, Node, ObservableNode
-from ..actions import ActionDefinitionNode, ActionUseNode
+from ..actions import ActionDefinitionNode, ActionParameter, ActionUseNode
 import langur.baml_client as baml
 
 from typing import TYPE_CHECKING
@@ -50,21 +50,27 @@ class WorkspaceConnector(Worker):
             ActionDefinitionNode(
                 action_id="FILE_READ",
                 description="Read a single file's contents.",
-                schema={"file_path": tb.string()}
+                #schema={"file_path": tb.string()}
+                params=[ActionParameter("file_path", tb.string())]
             )
         ),
         graph.add_node(
             ActionDefinitionNode(
                 action_id="FILE_WRITE",
                 description="Read and subsequently overwrite a file's contents.",
-                schema={"file_path": tb.string(), "new_content": tb.string()}
+                #schema={"file_path": tb.string(), "new_content": tb.string()}
+                params=[
+                    ActionParameter("file_path", tb.string()),
+                    ActionParameter("new_content", tb.string(), "Content to replace existing")
+                ]
             )
         )
         graph.add_node(
             ActionDefinitionNode(
                 action_id="THINK",
                 description="Do purely cognitive processing.",
-                schema={}
+                #schema={}
+                params=[]
             )
         )
     
@@ -78,12 +84,15 @@ class WorkspaceConnector(Worker):
         for action_def_node in action_def_nodes:
             action_def_name = action_def_node.id
             
-            schema = action_def_node.schema
+            params = action_def_node.params
 
             builder = tb.add_class(action_def_name)
-            for param, field_type in schema.items():
+            #for param, field_type in schema.items():
+            for param in params:
                 # use field type from action def but make optional (any problems if double applied?)
-                builder.add_property(param, field_type.optional())
+                property_builder = builder.add_property(param.param_key, param.field_type.optional())
+                if param.description:
+                    property_builder.description(param.description)
             
             #builder.add_property("type")
             #tb.string().

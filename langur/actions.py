@@ -3,6 +3,20 @@ import json
 from langur.graph import Node
 from baml_py.type_builder import FieldType
 
+
+class ActionParameter:
+    def __init__(self, param_key: str, field_type: FieldType, description: str | None = None):
+        self.param_key = param_key
+        self.field_type = field_type
+        self.description = description
+    
+    def __str__(self):
+        if self.description:
+            return f"{self.param_key}: {self.description}"
+        else:
+            return f"{self.param_key}"
+
+
 class ActionUseNode(Node):
     tags = ["action"]
     
@@ -27,24 +41,24 @@ class ActionUseNode(Node):
 class ActionDefinitionNode(Node):
     tags = ["action_definition"]
 
-    def __init__(self, action_id: str, description: str, schema: dict[str, FieldType]):
+    def __init__(self, action_id: str, description: str, params: list[ActionParameter]):#schema: dict[str, FieldType]):
         '''
         description: natural language description of exactly what this action does
         schema: JSON schema defining input for this action
         '''
         super().__init__(action_id)
         self.description = description
-        self.schema = schema
+        self.params = params
     
     def content(self) -> str:
         #formatted_schema = json.dumps(self.schema)
-        params = ", ".join(self.schema.keys())
+        params = ", ".join(str(p) for p in self.params)
         return f"Action ID: {self.id}\nAction Description: {self.description}\nAction Parameters: {params}"#\nAction Input Schema:\n{formatted_schema}
 
     def get_visual_attributes(self):
         #formatted_schema = json.dumps(self.schema)
         # Ideally we would show param types as well, but no easy way to get str representation of FieldType
-        params = ", ".join(self.schema.keys())
+        params = ", ".join(str(p) for p in self.params)
         return {
             **super().get_visual_attributes(),
             "description": self.description,
