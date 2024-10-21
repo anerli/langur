@@ -1,25 +1,16 @@
-from abc import ABC
-from .graph import Graph, Edge, TaskNode
-from langur.baml_client import b
+from .worker import Worker
+from langur.graph import Graph, Node, Edge
+import langur.baml_client as baml
 
-class Worker(ABC):
-    '''Meta-cognitive Worker'''
-
-    def get_setup_order(self) -> int:
-        '''Lower order = earlier in setup'''
-        # Very simplistic system, likely will need to be redesigned
-        return 0
+class TaskNode(Node):
+    tags = ["task"]
+    def __init__(self, id: str, content: str, action_types: list[str]):
+        super().__init__(id)
+        self._content = content
+        self.action_types = action_types
     
-    async def setup(self, graph: Graph):
-        '''Runs once when workers are added to nexus'''
-        pass
-
-    async def cycle(self, graph: Graph):
-        '''
-        Do one cycle with this worker; the implementation will vary widely depending on the worker's purpose.
-        Each cycle should be finite, though potentially cycles could be executed indefinitely.
-        '''
-        pass
+    def content(self):
+        return f"{self._content} {self.action_types}"
 
 class Planner(Worker):
     '''Creates subgraph of subtasks necessary to achieve final goal'''
@@ -30,7 +21,7 @@ class Planner(Worker):
     async def setup(self, graph: Graph):
         # Late setup to have knowledge for available actions etc.
         # Create a subgraph of subtasks with dependency relations as edges, connected to the final goal.
-        resp = await b.PlanSubtasks(
+        resp = await baml.b.PlanSubtasks(
             goal=graph.goal,
             graph_context=graph.build_context(),
             action_types="\n".join([f"- {node.id}" for node in graph.query_nodes_by_tag("action_definition")]),

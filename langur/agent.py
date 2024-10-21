@@ -5,10 +5,9 @@ import os
 from typing import Literal
 from baml_py import ClientRegistry
 from langur.connectors.connector import Connector
-from langur.worker import Worker
+from langur.workers.worker import Worker
 from langur.world import World
 from langur.graph import Graph
-from langchain_core.language_models.chat_models import BaseChatModel
 
 class Langur:
     def __init__(self, goal: str, llm: Literal['Default', 'Fast', 'Smart'] = 'Default'):

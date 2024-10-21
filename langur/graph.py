@@ -1,10 +1,9 @@
-# For vis
 from abc import abstractmethod
-import json
 from typing import Callable
 from baml_py import ClientRegistry
 import networkx as nx
 from ipysigma import Sigma
+from .workers.subtask_planner import TaskNode
 
 class NodeCollisionError(RuntimeError):
     pass
@@ -84,60 +83,7 @@ class StaticNode(Node):
     def content(self):
         return self._content
 
-class TaskNode(Node):
-    tags = ["task"]
-    def __init__(self, id: str, content: str, action_types: list[str]):
-        super().__init__(id)
-        self._content = content
-        self.action_types = action_types
-    
-    def content(self):
-        return f"{self._content} {self.action_types}"
 
-class ActionUseNode(Node):
-    tags = ["action"]
-    
-    def __init__(self, id: str, payload: dict):#, thoughts: str):
-        '''payload: empty, partial, or full input dict'''
-        super().__init__(id)
-        self.payload = payload
-        #self.thoughts = thoughts
-    
-    def content(self):
-        formatted_inputs = json.dumps(self.payload)
-        return f"Action Use ID: {self.id}\nAction Inputs:\n{formatted_inputs}"
-
-    def get_visual_attributes(self):
-        formatted_inputs = json.dumps(self.payload)
-        return {
-            **super().get_visual_attributes(),
-            "payload": formatted_inputs,
-            #"thoughts": self.thoughts
-        }
-
-class ActionDefinitionNode(Node):
-    tags = ["action_definition"]
-
-    def __init__(self, action_id: str, description: str, schema: dict):
-        '''
-        description: natural language description of exactly what this action does
-        schema: JSON schema defining input for this action
-        '''
-        super().__init__(action_id)
-        self.description = description
-        self.schema = schema
-    
-    def content(self) -> str:
-        formatted_schema = json.dumps(self.schema)
-        return f"Action ID: {self.id}\nAction Description: {self.description}\nAction Input Schema:\n{formatted_schema}"
-
-    def get_visual_attributes(self):
-        formatted_schema = json.dumps(self.schema)
-        return {
-            **super().get_visual_attributes(),
-            "description": self.description,
-            "schema": formatted_schema
-        }
 
 class Edge:
     '''Knowledge Graph Edge'''

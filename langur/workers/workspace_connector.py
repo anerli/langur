@@ -7,8 +7,14 @@ from fs.walk import Walker
 
 from langur.baml_client.type_builder import TypeBuilder
 from .worker import Worker
-from .graph import ActionDefinitionNode, ActionUseNode, Graph, Node, ObservableNode, TaskNode
-from langur.baml_client import b
+from ..graph import Graph, Node, ObservableNode
+from ..actions import ActionDefinitionNode, ActionUseNode
+import langur.baml_client as baml
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .subtask_planner import TaskNode
 
 class WorkspaceConnector(Worker):
     '''Manages cognitive relations between the nexus and filesystem actions'''
@@ -36,6 +42,7 @@ class WorkspaceConnector(Worker):
     
     async def setup(self, graph: Graph):
         # Create nodes for workspace actions and dynamic workspace overview
+        tb = TypeBuilder()
         graph.add_node(
             ObservableNode("workspace", self.overview)
         )
@@ -43,14 +50,14 @@ class WorkspaceConnector(Worker):
             ActionDefinitionNode(
                 action_id="FILE_READ",
                 description="Read a single file's contents.",
-                schema={"file_path": {"type": "string"}}
+                schema={"file_path": tb.string()}
             )
         ),
         graph.add_node(
             ActionDefinitionNode(
                 action_id="FILE_WRITE",
                 description="Read and subsequently overwrite a file's contents.",
-                schema={"file_path": {"type": "string"}, "new_content": {"type": "string"}}
+                schema={"file_path": tb.string(), "new_content": tb.string()}
             )
         )
         graph.add_node(
@@ -61,7 +68,7 @@ class WorkspaceConnector(Worker):
             )
         )
     
-    async def task_to_actions(self, graph: Graph, task_node: TaskNode):
+    async def task_to_actions(self, graph: Graph, task_node: 'TaskNode'):
         # Query graph for action definitions
         action_def_nodes: list[ActionDefinitionNode] = graph.query_nodes_by_tag("action_definition")
     
@@ -72,11 +79,11 @@ class WorkspaceConnector(Worker):
             action_def_name = action_def_node.id
             
             schema = action_def_node.schema
-            # these are like {"file_path": {"type": "string"}, "new_content": {"type": "string"}}
+
             builder = tb.add_class(action_def_name)
-            for param in schema.keys():
-                # for now assuming string values and ignoring actual schema
-                builder.add_property(param, tb.string().optional())
+            for param, field_type in schema.items():
+                # use field type from action def but make optional (any problems if double applied?)
+                builder.add_property(param, field_type.optional())
             
             #builder.add_property("type")
             #tb.string().
@@ -89,7 +96,7 @@ class WorkspaceConnector(Worker):
         tb.Action.add_property("action_input", tb.union(action_input_types)).description("Provide inputs if known else null. Do not hallicinate values.")
         
 
-        resp = await b.TaskToActions(
+        resp = await baml.b.TaskToActions(
             goal=graph.goal,
             observables="\n".join([node.content() for node in graph.query_nodes_by_tag("observable")]),
             task=f"{task_node.id}: {task_node.content()}",
