@@ -2,13 +2,21 @@
 //     @@dynamic
 // }
 
-class Action {
-    node_id string @description("UNIQUE node ID. DO NOT reuse any IDs you have seen before.")
-    action_type string
-    //action_input ActionInput @description("Input for the action. For each parameter, include it if known right now, otherwise omit it completely.")
-    upstream_action_ids string[]
+enum ActionType {
+    // THINK @description("Do purely cognitive processing.")
+    // FILE_WRITE @description("Read and subsequently overwrite a file's contents.")
+    // FILE_READ @description("Read a single file's contents.")
     @@dynamic
 }
+
+class Action {
+    node_id string @description("A unique natural language ID in lower_snake_case which reflects the action use.")
+    action_type ActionType
+    upstream_action_ids string[] @description("Define which other actions this one depends on")
+    //action_input ActionInput @description("Provide inputs if known else null. Do not hallicinate values.")
+    @@dynamic
+}
+
 
 function TaskToActions (goal: string, observables: string, task: string, action_definitions: string, upstream_actions: string) -> Action[] {
     client Default
@@ -20,24 +28,18 @@ function TaskToActions (goal: string, observables: string, task: string, action_
         Relevant context:
         {{observables}}
 
+        **upstream_action_ids**:
+        {{upstream_actions}}
+        These upstream actions have already been created, do not include them in your response.
+
         You are planning out the execution of specific actions to help accomplish the goal.
         Given a specific Task node, your job is to convert it into specific ActionUse nodes, representing distinct uses of various available actions.
         Create actions such that when executed, they will complete the task.
 
-        When you create an action you must include:
-
-        **node_id**: a unique natural language ID in lower_snake_case describing the action use
-
-        **action_type**: The type identifier for the action being used, from these available types:
-        {{action_definitions}}
-
-        **action_input**: For each input parameter, either provide the input value if known, or do not include at all if it depends on another result.
-
-        **upstream_action_ids**: Define which actions the action depends on, from these upstream actions OR from other ones you generate:
-        {{upstream_actions}}
+        When you provide action inputs, you have a choice whether to provide parameters or null.
+        When the parameter is known right now as part of the plan, provide it.
+        If its not known or depends on some other result, leave it as null.
         
-        These upstream actions have already been created, do not include them in your response.
-
         Your specific task to break down is: {{task}}
 
         {{ctx.output_format}}

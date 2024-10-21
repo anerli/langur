@@ -41,21 +41,21 @@ class WorkspaceConnector(Worker):
         )
         graph.add_node(
             ActionDefinitionNode(
-                action_id="file_read",
+                action_id="FILE_READ",
                 description="Read a single file's contents.",
                 schema={"file_path": {"type": "string"}}
             )
         ),
         graph.add_node(
             ActionDefinitionNode(
-                action_id="file_write",
+                action_id="FILE_WRITE",
                 description="Read and subsequently overwrite a file's contents.",
                 schema={"file_path": {"type": "string"}, "new_content": {"type": "string"}}
             )
         )
         graph.add_node(
             ActionDefinitionNode(
-                action_id="think",
+                action_id="THINK",
                 description="Do purely cognitive processing.",
                 schema={}
             )
@@ -66,19 +66,21 @@ class WorkspaceConnector(Worker):
         action_def_nodes: list[ActionDefinitionNode] = graph.query_nodes_by_tag("action_definition")
     
         tb = TypeBuilder()
-        action_types = []
+        action_input_types = []
         # Dynamically build action input types
         for action_def_node in action_def_nodes:
             action_def_name = action_def_node.id
+            tb.ActionType.add_value(action_def_name)
             schema = action_def_node.schema
             # these are like {"file_path": {"type": "string"}, "new_content": {"type": "string"}}
             builder = tb.add_class(action_def_name)
             for param in schema.keys():
                 # for now assuming string values and ignoring actual schema
                 builder.add_property(param, tb.string().optional())
-            action_types.append(builder.type())
+            action_input_types.append(builder.type())
 
-        tb.Action.add_property("action_input", tb.union(action_types)).description("Provide inputs if known else null. Do not hallicinate values.")
+        tb.Action.add_property("action_input", tb.union(action_input_types)).description("Provide inputs if known else null. Do not hallicinate values.")
+        
 
         resp = await b.TaskToActions(
             goal=graph.goal,
