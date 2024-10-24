@@ -8,7 +8,7 @@ from typing import Literal
 from baml_py import ClientRegistry
 from langur.connectors.connector import Connector
 from langur.workers.worker import Worker
-from langur.world import World
+#from langur.world import World
 from langur.graph.graph import Graph
 
 class Langur:
@@ -31,7 +31,7 @@ class Langur:
         self.llm = llm
         self.cr.set_primary(llm)
         
-        self.world = World()
+        #self.world = World()
         #self.goal = goal
         self.graph = graph if graph else Graph(goal, self.cr)
         self.workers = []
@@ -110,7 +110,7 @@ class Langur:
 
     def save(self, path: str="./agent.json"):
         with open(path, "w") as f:
-            json.dump(self.to_json(), f)
+            json.dump(self.to_json(), f, indent=2)
             #pickle.dump(self, f)
 
     @classmethod

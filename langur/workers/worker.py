@@ -20,7 +20,6 @@ class Worker(BaseModel, ABC):
 
     def __init_subclass__(cls, **kwargs):
         """Register subclasses automatically when they're defined"""
-        print("__init_subclass__")
         super().__init_subclass__(**kwargs)
         Worker._subclasses[cls.__name__] = cls
 

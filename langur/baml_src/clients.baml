@@ -21,7 +21,7 @@ client<llm> Fast {
 client<llm> Smart {
     provider anthropic
     options {
-        model "claude-3-5-sonnet-20240620"
+        model "claude-3-5-sonnet-20241022"
         api_key env.ANTHROPIC_API_KEY
         temperature 0.0
     }
