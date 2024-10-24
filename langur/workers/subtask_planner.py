@@ -6,7 +6,7 @@ import langur.baml_client as baml
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from langur.graph import Graph
+    from langur.graph.graph import Graph
 
 
 class TaskNode(Node):

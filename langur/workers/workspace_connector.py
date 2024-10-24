@@ -7,7 +7,7 @@ from fs.walk import Walker
 
 from langur.baml_client.type_builder import TypeBuilder
 from .worker import Worker
-from ..graph import Graph
+from ..graph.graph import Graph
 from ..graph.node import ObservableNode
 from ..actions import ActionDefinitionNode, ActionParameter, ActionUseNode
 import langur.baml_client as baml

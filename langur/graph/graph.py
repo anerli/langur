@@ -59,7 +59,7 @@ class Graph:
             #node_attributes = {attr: getattr(node, attr) for attr in dir(node) if not attr.startswith('__') and not callable(getattr(node, attr))}
             #print("Hello?")
             #print("Attrs:", node.get_visual_attributes())
-            g.add_node(node.id, node_class=node.__class__.__name__, **node.get_visual_attributes())
+            g.add_node(node.id, node_class=node.__class__.__name__, **node.to_json())
         for edge in self.edges:
             g.add_edge(edge.src_node.id, edge.dest_node.id, label=edge.relation)
         return g
@@ -150,3 +150,12 @@ class Graph:
             context += f"Node Content:\n{node.content()}"
             context += "\n\n"
         return context
+
+    def to_json(self) -> dict:
+        return {
+            
+        }
+
+    @classmethod
+    def from_json(cls, data: dict) -> 'Graph':
+        return Graph("foo", ClientRegistry())

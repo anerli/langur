@@ -1,6 +1,6 @@
 import json
 
-from langur.graph import Node
+from langur.graph.node import Node
 from baml_py.type_builder import FieldType
 
 
@@ -30,13 +30,23 @@ class ActionUseNode(Node):
         formatted_inputs = json.dumps(self.params)
         return f"Action Use ID: {self.id}\nAction Inputs:\n{formatted_inputs}"
 
-    def get_visual_attributes(self):
-        formatted_inputs = json.dumps(self.params)
+    # def get_visual_attributes(self):
+    #     formatted_inputs = json.dumps(self.params)
+    #     return {
+    #         **super().get_visual_attributes(),
+    #         "params": formatted_inputs,
+    #         #"thoughts": self.thoughts
+    #     }
+
+    def to_json(self) -> dict:
         return {
-            **super().get_visual_attributes(),
-            "params": formatted_inputs,
-            #"thoughts": self.thoughts
+            **super().to_json(),
+            "params": self.params
         }
+    
+    @classmethod
+    def from_json(cls, data: dict) -> 'ActionUseNode':
+        return ActionUseNode(data["id"], data["params"])
 
 class ActionDefinitionNode(Node):
     tags = ["action_definition"]
@@ -55,13 +65,24 @@ class ActionDefinitionNode(Node):
         params = ", ".join(str(p) for p in self.params)
         return f"Action ID: {self.id}\nAction Description: {self.description}\nAction Parameters: {params}"#\nAction Input Schema:\n{formatted_schema}
 
-    def get_visual_attributes(self):
-        #formatted_schema = json.dumps(self.schema)
-        # Ideally we would show param types as well, but no easy way to get str representation of FieldType
-        params = ", ".join(str(p) for p in self.params)
+    # def get_visual_attributes(self):
+    #     #formatted_schema = json.dumps(self.schema)
+    #     # Ideally we would show param types as well, but no easy way to get str representation of FieldType
+    #     params = ", ".join(str(p) for p in self.params)
+    #     return {
+    #         **super().get_visual_attributes(),
+    #         "description": self.description,
+    #         "params": params
+    #         #"schema": formatted_schema
+    #     }
+    
+    def to_json(self) -> dict:
         return {
-            **super().get_visual_attributes(),
+            **super().to_json(),
             "description": self.description,
-            "params": params
-            #"schema": formatted_schema
+            "params": self.params
         }
+    
+    @classmethod
+    def from_json(cls, data: dict) -> 'ActionUseNode':
+        return ActionUseNode(data["id"], data["description"], data["params"])
