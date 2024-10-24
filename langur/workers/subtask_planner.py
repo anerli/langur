@@ -12,17 +12,17 @@ if TYPE_CHECKING:
 class TaskNode(Node):
     tags: ClassVar[list[str]] = ["task"]
 
-    content: str
+    task: str
     action_types: list[str]
 
     # tmp, refactor callers
-    def __init__(self, id: str, content: str, action_types: list[str]):
-        super().__init__(id=id, content=content, action_types=action_types)
+    def __init__(self, id: str, task: str, action_types: list[str]):
+        super().__init__(id=id, task=task, action_types=action_types)
         #self._content = content
         #self.action_types = action_types
     
     def content(self):
-        return f"{self._content} {self.action_types}"
+        return f"{self.task} {self.action_types}"
 
 class Planner(Worker):
     '''Creates subgraph of subtasks necessary to achieve final goal'''

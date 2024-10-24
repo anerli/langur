@@ -90,5 +90,8 @@ class Worker(BaseModel, ABC):
     def from_json(cls, data: dict) -> 'Worker':
         worker_type = data["worker_type"]
         worker_class = Worker._subclasses[worker_type]
+        
         # Instantiate the appropriate subclass
-        return worker_class.model_validate(data)
+        data_no_worker_type = data.copy()
+        del data_no_worker_type["worker_type"]
+        return worker_class.model_validate(data_no_worker_type)

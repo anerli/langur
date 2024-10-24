@@ -65,7 +65,8 @@ class Langur:
                 jobs.append(worker.setup(self.graph))
             await asyncio.gather(*jobs)
 
-        #self.workers.extend(workers)
+        self.workers.extend(workers)
+    
     def add_workers_nosetup(self, *workers: Worker):
         # JANK
         self.workers.extend(workers)

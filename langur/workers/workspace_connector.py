@@ -8,7 +8,7 @@ from fs.walk import Walker
 from langur.baml_client.type_builder import TypeBuilder
 from .worker import Worker
 from ..graph.graph import Graph
-from ..graph.node import ObservableNode
+from ..graph.node import Node
 from ..actions import ActionDefinitionNode, ActionParameter, ActionUseNode
 import langur.baml_client as baml
 
@@ -17,23 +17,39 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .subtask_planner import TaskNode
 
+class WorkspaceOverviewNode(Node):
+    overview: str
+
+    # leaving this since something queries for it
+    tags = ["observable"]
+
+    def content(self):
+        return self.overview
+
 class WorkspaceConnector(Worker):
     '''Manages cognitive relations between the nexus and filesystem actions'''
+    workspace_path: str
 
-    def __init__(self, filesystem: FS | str = None):
-        if isinstance(filesystem, str):
-            if not os.path.exists(filesystem):
-                os.mkdir(filesystem)
-            filesystem = OSFS(filesystem)
+    # def __init__(self, filesystem: FS | str = None):
+    #     if isinstance(filesystem, str):
+    #         if not os.path.exists(filesystem):
+    #             os.mkdir(filesystem)
+    #         filesystem = OSFS(filesystem)
         
-        self.fs = filesystem if filesystem else MemoryFS()
+    #     self.fs = filesystem if filesystem else MemoryFS()
+
+    def __init__(self, workspace_path: str):
+        super().__init__(workspace_path=workspace_path)
+
+    def get_fs(self):
+        return OSFS(self.workspace_path)
     
     def overview(self) -> str:
         s = "The current working directory is `.`, which contains these files/subdirectories:\n"
         walker = Walker()
         file_list = []
 
-        for path, directories, files in walker.walk(self.fs):
+        for path, directories, files in walker.walk(self.get_fs()):
             for file_info in files:
                 file_path = "." + os.path.join(path, file_info.name)
                 unix_style_path = file_path.replace(os.sep, "/")
@@ -45,30 +61,32 @@ class WorkspaceConnector(Worker):
         # Create nodes for workspace actions and dynamic workspace overview
         tb = TypeBuilder()
         graph.add_node(
-            ObservableNode("workspace", self.overview)
+            WorkspaceOverviewNode(id="workspace", overview=self.overview())
         )
         graph.add_node(
             ActionDefinitionNode(
-                action_id="FILE_READ",
+                id="FILE_READ",
                 description="Read a single file's contents.",
                 #schema={"file_path": tb.string()}
-                params=[ActionParameter("file_path", tb.string())]
+                #params=[ActionParameter("file_path", tb.string())]
+                params=["file_path"]
             )
         ),
         graph.add_node(
             ActionDefinitionNode(
-                action_id="FILE_WRITE",
+                id="FILE_WRITE",
                 description="Read and subsequently overwrite a file's contents.",
                 #schema={"file_path": tb.string(), "new_content": tb.string()}
                 params=[
-                    ActionParameter("file_path", tb.string()),
-                    ActionParameter("new_content", tb.string(), "Content to replace existing")
+                    #ActionParameter("file_path", tb.string()),
+                    #ActionParameter("new_content", tb.string(), "Content to replace existing")
+                    "file_path", "new_content"
                 ]
             )
         )
         graph.add_node(
             ActionDefinitionNode(
-                action_id="THINK",
+                id="THINK",
                 description="Do purely cognitive processing.",
                 #schema={}
                 params=[]
@@ -92,9 +110,11 @@ class WorkspaceConnector(Worker):
 
             for param in params:
                 # use field type from action def but make optional (any problems if double applied?)
-                property_builder = builder.add_property(param.param_key, param.field_type.optional())
-                if param.description:
-                    property_builder.description(param.description)
+                # TODO: hardcoded to str and no desc - add back when BAML supports dynamic types from JSON
+                # property_builder = builder.add_property(param.param_key, param.field_type.optional())
+                # if param.description:
+                #     property_builder.description(param.description)
+                builder.add_property(param, tb.string())
             action_input_types.append(builder.type())
 
             # Alternative approach is add a literal type to input builder with node id - but right now cant add literals with tb?

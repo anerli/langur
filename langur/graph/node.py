@@ -2,8 +2,9 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Callable, ClassVar, Dict, Set, Type
 from pydantic import BaseModel, ConfigDict, Field
 
-if TYPE_CHECKING:
-    from .edge import Edge
+#if TYPE_CHECKING:
+# Fully import in order for pydantic models to be built
+from .edge import Edge
 
 class Node(BaseModel):
     id: str
@@ -97,18 +98,16 @@ class Node(BaseModel):
         data_no_node_type = data.copy()
         del data_no_node_type["node_type"]
         return worker_class.model_validate(data_no_node_type)
-
-class ObservableNode(Node):
-    tags = ["observable"]
-
-    def __init__(self, id: str, content_getter: Callable[[], str]):
-        super().__init__(id)
-        self.content_getter = content_getter
     
-    def content(self):
-        return self.content_getter()
+# class ObservableNode(Node):
+#     tags = ["observable"]
 
-# oops how the fuck do we serialize content_getter
+#     def __init__(self, id: str, content_getter: Callable[[], str]):
+#         super().__init__(id)
+#         self.content_getter = content_getter
+    
+#     def content(self):
+#         return self.content_getter()
 
 # class StaticNode(Node):
 #     tags = ["static"]

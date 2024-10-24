@@ -1,6 +1,9 @@
 import json
-from typing import ClassVar
+from typing import ClassVar, Set
 
+from pydantic import Field
+
+from langur.graph.edge import Edge
 from langur.graph.node import Node
 from baml_py.type_builder import FieldType
 
@@ -51,23 +54,28 @@ class ActionUseNode(Node):
     def from_json(cls, data: dict) -> 'ActionUseNode':
         return ActionUseNode(data["id"], data["params"])
 
+
+
 class ActionDefinitionNode(Node):
     tags: ClassVar[list[str]] = ["action_definition"]
+    #edges: Set['Edge'] = Field(default_factory=set, exclude=True)
 
     description: str
     # TODO: deal w params, obviously not serializable
-    params: list[ActionParameter]
+    #params: list[ActionParameter] = Field(exclude=True)
+    # tmp, assume all strings and just have names - until BAML supports dynamic types from JSON schema
+    params: list[str]
     
     
 
-    def __init__(self, action_id: str, description: str, params: list[ActionParameter]):#schema: dict[str, FieldType]):
-        '''
-        description: natural language description of exactly what this action does
-        schema: JSON schema defining input for this action
-        '''
-        super().__init__(id=action_id, description=description, params=params)
-        self.description = description
-        self.params = params
+    # def __init__(self, action_id: str, description: str, params: list[ActionParameter]):#schema: dict[str, FieldType]):
+    #     '''
+    #     description: natural language description of exactly what this action does
+    #     schema: JSON schema defining input for this action
+    #     '''
+    #     super().__init__(id=action_id, description=description, params=params)
+    #     self.description = description
+    #     self.params = params
     
     def content(self) -> str:
         #formatted_schema = json.dumps(self.schema)
@@ -85,13 +93,15 @@ class ActionDefinitionNode(Node):
     #         #"schema": formatted_schema
     #     }
     
-    def to_json(self) -> dict:
-        return {
-            **super().to_json(),
-            "description": self.description,
-            "params": self.params
-        }
+    # def to_json(self) -> dict:
+    #     return {
+    #         **super().to_json(),
+    #         "description": self.description,
+    #         "params": self.params
+    #     }
     
-    @classmethod
-    def from_json(cls, data: dict) -> 'ActionUseNode':
-        return ActionUseNode(data["id"], data["description"], data["params"])
+    # @classmethod
+    # def from_json(cls, data: dict) -> 'ActionUseNode':
+    #     return ActionUseNode(data["id"], data["description"], data["params"])
+
+#ActionDefinitionNode()
