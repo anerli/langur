@@ -1,4 +1,5 @@
 import json
+from typing import ClassVar
 
 from langur.graph.node import Node
 from baml_py.type_builder import FieldType
@@ -18,12 +19,14 @@ class ActionParameter:
 
 
 class ActionUseNode(Node):
-    tags = ["action"]
+    tags: ClassVar[list[str]] = ["action"]
+
+    params: dict
     
     def __init__(self, id: str, params: dict):#, thoughts: str):
         '''params: empty, partial, or full input dict'''
-        super().__init__(id)
-        self.params = params
+        super().__init__(id=id, params=params)
+        #self.params = params
         #self.thoughts = thoughts
     
     def content(self):
@@ -49,14 +52,20 @@ class ActionUseNode(Node):
         return ActionUseNode(data["id"], data["params"])
 
 class ActionDefinitionNode(Node):
-    tags = ["action_definition"]
+    tags: ClassVar[list[str]] = ["action_definition"]
+
+    description: str
+    # TODO: deal w params, obviously not serializable
+    params: list[ActionParameter]
+    
+    
 
     def __init__(self, action_id: str, description: str, params: list[ActionParameter]):#schema: dict[str, FieldType]):
         '''
         description: natural language description of exactly what this action does
         schema: JSON schema defining input for this action
         '''
-        super().__init__(action_id)
+        super().__init__(id=action_id, description=description, params=params)
         self.description = description
         self.params = params
     

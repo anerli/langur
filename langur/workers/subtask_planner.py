@@ -3,18 +3,23 @@ from langur.graph.node import Node
 from langur.graph.edge import Edge
 import langur.baml_client as baml
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
     from langur.graph.graph import Graph
 
 
 class TaskNode(Node):
-    tags = ["task"]
+    tags: ClassVar[list[str]] = ["task"]
+
+    content: str
+    action_types: list[str]
+
+    # tmp, refactor callers
     def __init__(self, id: str, content: str, action_types: list[str]):
-        super().__init__(id)
-        self._content = content
-        self.action_types = action_types
+        super().__init__(id=id, content=content, action_types=action_types)
+        #self._content = content
+        #self.action_types = action_types
     
     def content(self):
         return f"{self._content} {self.action_types}"

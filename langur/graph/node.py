@@ -7,36 +7,19 @@ if TYPE_CHECKING:
 
 class Node(BaseModel):
     id: str
-    #edges: Set['Edge'] = Field(default_factory=set)
-    
-    #node_type: str = Field(default_factory=lambda self: self.__class__.__name__, frozen=True)
-    
+    edges: Set['Edge'] = Field(default_factory=set, exclude=True)
+
     tags: ClassVar[list[str]] = []
     _subclasses: ClassVar[Dict[str, Type['Node']]] = {}
 
-    # model_config = ConfigDict(
-    #     json_schema_extra={
-    #         # Auto-detects subclass
-    #         "discriminator": {"propertyName": "node_type"}
-    #     }
-    # )
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True
+    )
 
-    # @classmethod
-    # def get_node_type(cls) -> str:
-    #     return cls.__name__
-
-    '''Knowledge Graph Node'''
-    # def __init__(self, id: str):
-    #     self.id = id
-    #     self.edges = set()
-
-    # def __init__(self, **kwargs):
-    #     # idk man, no workers use anything like this yet but eventually they will be configurable and tryna figure out how the serde works with that
-    #     self.settings = kwargs
+    # def __init__(self, **data):
+    #     super().__init__(**data)
 
     def __init_subclass__(cls, **kwargs):
-        """Register subclasses automatically when they're defined"""
-        print("__init_subclass__")
         super().__init_subclass__(**kwargs)
         Node._subclasses[cls.__name__] = cls
     
@@ -107,27 +90,13 @@ class Node(BaseModel):
     @classmethod
     def from_json(cls, data: dict) -> 'Node':
         node_type = data["node_type"]
+        if node_type not in cls._subclasses:
+            raise KeyError(f"Unknown node type: {node_type}")
         worker_class = Node._subclasses[node_type]
         # Instantiate the appropriate subclass
-        return worker_class.model_validate(data)
-
-    # @classmethod
-    # def from_json(cls, data: dict) -> 'Node':
-    #     node_type = data["node_type"]
-        
-    #     if node_type not in cls._subclasses:
-    #         raise KeyError(f"Unknown node type: {node_type}")
-        
-    #     node_class = cls._subclasses[node_type]
-
-    #     # try call subclass serialize impl
-    #     if hasattr(node_class, 'from_json'):
-    #         return node_class.from_json(data)
-        
-    #     # else try init with ID
-    #     return node_class(data["id"])#**data["settings"])
-
-
+        data_no_node_type = data.copy()
+        del data_no_node_type["node_type"]
+        return worker_class.model_validate(data_no_node_type)
 
 class ObservableNode(Node):
     tags = ["observable"]

@@ -12,18 +12,25 @@ class NodeCollisionError(RuntimeError):
     
 class Graph:
     '''Knowledge Graph / Task Graph'''
-    def __init__(self, goal: StopIteration, cr: ClientRegistry):
-        self.goal = goal
-        self.goal_node = TaskNode("final_goal", goal, [])
+    def __init__(self, goal: str, cr: ClientRegistry, goal_node: Node = None):
         self._node_map: dict[str, Node] = {}
         self.edges: set[Edge] = set()
-        self.add_node(self.goal_node)
+        # having goal_node ctr is a huge hack but im moving it anyway shutup
+        self.goal = goal
+        if goal_node:
+            self.goal_node = goal_node
+        else:
+            self.goal_node = TaskNode("final_goal", goal, [])
+            self.add_node(self.goal_node)
+        
         self.cr = cr
 
-        
     
     def get_nodes(self) -> set[Node]:
         return set(self._node_map.values())
+
+    def get_edges(self) -> set[Edge]:
+        return self.edges
 
     def add_node(self, node: Node):
         if node.id in self._node_map:
@@ -153,9 +160,30 @@ class Graph:
 
     def to_json(self) -> dict:
         return {
-            
+            "nodes": [node.to_json() for node in self.get_nodes()],
+            "edges": [edge.to_json() for edge in self.get_edges()]
         }
 
     @classmethod
     def from_json(cls, data: dict) -> 'Graph':
-        return Graph("foo", ClientRegistry())
+        nodes = [Node.from_json(node_data) for node_data in data["nodes"]]
+        node_map = {node.id: node for node in nodes}
+
+        edges = []
+        for edge_data in data["edges"]:
+            edge = Edge(
+                src_node=node_map[edge_data["src_node_id"]],
+                relation=edge_data["relation"],
+                dest_node=node_map[edge_data["dest_node_id"]]
+            )
+            edges.append(edge)
+
+        # HUGE HACK FOR GOAL NODE DONT LOOK
+        graph = Graph("foo", ClientRegistry(), list(filter(lambda n: n.id == "final_goal", nodes))[0])
+
+        for node in nodes:
+            graph.add_node(node)
+        for edge in edges:
+            graph.add_edge(edge)
+        
+        return graph
