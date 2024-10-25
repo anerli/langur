@@ -6,7 +6,7 @@ from fs.osfs import OSFS
 from fs.walk import Walker
 
 from langur.baml_client.type_builder import TypeBuilder
-from .worker import Worker
+from .worker import STATE_DONE, STATE_SETUP, Worker
 from ..graph.graph import Graph
 from ..graph.node import Node
 from ..actions import ActionDefinitionNode, ActionParameter, ActionNode
@@ -36,8 +36,8 @@ class WorkspaceConnector(Worker):
         
     #     self.fs = filesystem if filesystem else MemoryFS()
 
-    def __init__(self, workspace_path: str):
-        super().__init__(workspace_path=workspace_path)
+    # def __init__(self, workspace_path: str):
+    #     super().__init__(workspace_path=workspace_path)
 
     def get_fs(self):
         return OSFS(self.workspace_path)
@@ -55,37 +55,39 @@ class WorkspaceConnector(Worker):
         s += "\n".join(file_list)
         return s
     
-    async def setup(self, graph: Graph):
-        # Create nodes for workspace actions and dynamic workspace overview
-        graph.add_node(
-            WorkspaceOverviewNode(id="workspace", overview=self.overview())
-        )
-        graph.add_node(
-            ActionDefinitionNode(
-                id="FILE_READ",
-                description="Read a single file's contents.",
-                #schema={"file_path": tb.string()}
-                #params=[ActionParameter("file_path", tb.string())]
-                params=["file_path"]
+    async def cycle(self, graph: Graph):
+        if self.state == STATE_SETUP:
+            # Create nodes for workspace actions and dynamic workspace overview
+            graph.add_node(
+                WorkspaceOverviewNode(id="workspace", overview=self.overview())
             )
-        ),
-        graph.add_node(
-            ActionDefinitionNode(
-                id="FILE_WRITE",
-                description="Read and subsequently overwrite a file's contents.",
-                #schema={"file_path": tb.string(), "new_content": tb.string()}
-                params=[
-                    #ActionParameter("file_path", tb.string()),
-                    #ActionParameter("new_content", tb.string(), "Content to replace existing")
-                    "file_path", "new_content"
-                ]
+            graph.add_node(
+                ActionDefinitionNode(
+                    id="FILE_READ",
+                    description="Read a single file's contents.",
+                    #schema={"file_path": tb.string()}
+                    #params=[ActionParameter("file_path", tb.string())]
+                    params=["file_path"]
+                )
+            ),
+            graph.add_node(
+                ActionDefinitionNode(
+                    id="FILE_WRITE",
+                    description="Read and subsequently overwrite a file's contents.",
+                    #schema={"file_path": tb.string(), "new_content": tb.string()}
+                    params=[
+                        #ActionParameter("file_path", tb.string()),
+                        #ActionParameter("new_content", tb.string(), "Content to replace existing")
+                        "file_path", "new_content"
+                    ]
+                )
             )
-        )
-        graph.add_node(
-            ActionDefinitionNode(
-                id="THINK",
-                description="Do purely cognitive processing.",
-                #schema={}
-                params=[]
+            graph.add_node(
+                ActionDefinitionNode(
+                    id="THINK",
+                    description="Do purely cognitive processing.",
+                    #schema={}
+                    params=[]
+                )
             )
-        )
+            self.state = STATE_DONE

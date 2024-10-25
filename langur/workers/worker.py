@@ -8,12 +8,21 @@ from typing import TYPE_CHECKING, ClassVar, Dict, Type
 if TYPE_CHECKING:
     from langur.graph.graph import Graph
 
+# Kind of special states
+# default starting state for most workers
+STATE_SETUP = "SETUP"
+# end state for most workers
+STATE_DONE = "DONE"
+
 class Worker(BaseModel, ABC):
     '''
     Meta-cognitive Worker
     
     Be careful when overriding __init__, kwargs must include all custom properties in order to be automatically deserialized properly.
     '''
+    
+    # Workers are often state machines, this state is serialized and retained
+    state: str = STATE_SETUP
 
     _subclasses: ClassVar[Dict[str, Type['Worker']]] = {}
 

@@ -7,7 +7,7 @@ import pickle
 from typing import Literal
 from baml_py import ClientRegistry
 from langur.connectors.connector import Connector
-from langur.workers.worker import Worker
+from langur.workers.worker import STATE_DONE, Worker
 #from langur.world import World
 from langur.graph.graph import Graph
 
@@ -37,8 +37,8 @@ class Agent:
         
         #self.world = World()
         #self.goal = goal
-        self.graph = graph if graph else Graph(self.cr)
-        self.workers = []
+        self.graph = graph if graph else Graph(workers=workers, cr=self.cr)
+        self.workers = workers
 
         
     
@@ -75,15 +75,26 @@ class Agent:
     #     # JANK
     #     self.workers.extend(workers)
 
-    async def cycle(self, cycles=1):
-        #workers: list[Worker] = [DependencyDecomposer(), IntermediateProductBuilder(), IntermediateProductBuilder()]
+    async def run_until_done(self):
+        
+        # could be helpful info to load/save cycle count instead of resetting if we loaded a prev agent, idk
+        cycle_count = 0
+        while not self.graph.are_workers_done():
+            # a lil jank calling the graph thing here
+            # would be cool to live update num done workers mid-cycle based on state changes - if workers were to use some hook to update state
+            print(f"[Cycle {cycle_count+1}]: {len(self.graph.get_workers_with_state(STATE_DONE))}/{len(self.workers)} workers done")
+            await self.cycle()
+            cycle_count += 1
+        print("Agent done!")
 
-        for _ in range(cycles):
-            jobs = []
-            for worker in self.workers:
-                jobs.append(worker.cycle(self.graph))
-            # naive async implementation, don't need to necessarily block gather here
-            await asyncio.gather(*jobs)
+    async def cycle(self):#, cycles=1):
+        #workers: list[Worker] = [DependencyDecomposer(), IntermediateProductBuilder(), IntermediateProductBuilder()]
+        #for _ in range(cycles):
+        jobs = []
+        for worker in self.workers:
+            jobs.append(worker.cycle(self.graph))
+        # naive async implementation, don't need to necessarily block gather here
+        await asyncio.gather(*jobs)
     
     def to_json(self) -> dict:
         return {
@@ -99,16 +110,17 @@ class Agent:
 
         # )
         workers = [Worker.from_json(worker_data) for worker_data in data["workers"]]
-        graph = Graph.from_json(data["graph"])
+        graph = Graph.from_json(data=data["graph"], workers=workers)
         # jank, goal should be a worker anyway
-        goal = graph.query_node_by_id("final_goal").content
+        #goal = graph.query_node_by_id("final_goal").content
         agent = Agent(
-            goal=goal,
+            workers=workers,
+            #goal=goal,
             llm=data["llm"],
             graph=graph
         )
         #agent.add_workers(workers, setup=False)
-        agent.add_workers_nosetup(workers)
+        #agent.add_workers_nosetup(workers)
         return agent
 
 

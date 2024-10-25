@@ -1,7 +1,7 @@
 from langur.actions import ActionDefinitionNode, ActionNode
 from langur.baml_client.type_builder import TypeBuilder
 from langur.graph.graph import Graph
-from langur.workers.worker import Worker
+from langur.workers.worker import STATE_DONE, STATE_SETUP, Worker
 import langur.baml_client as baml
 
 from typing import TYPE_CHECKING
@@ -12,7 +12,18 @@ if TYPE_CHECKING:
 class PlannerWorker(Worker):
     task_node_id: str
 
+    state: str = "WAITING"
+
     async def cycle(self, graph: Graph):
+        # a bit hacky idk
+        # could in theory cause non-deterministic number of cycles this happens async with others?
+        # May happen on cycle 1 or 2 dependending on whether other workers execute first - either way it works - but maybe this is a bit odd.
+        #print("Planner Cycle, workers still in SETUP:", len(graph.get_workers_with_state(STATE_SETUP)))
+        if self.state == "WAITING" and len(graph.get_workers_with_state(STATE_SETUP)) == 0:
+            await self.plan_task(graph)
+            self.state = STATE_DONE
+
+    async def plan_task(self, graph: Graph):
         action_def_nodes: list[ActionDefinitionNode] = graph.query_nodes_by_tag("action_definition")
     
         tb = TypeBuilder()
@@ -83,4 +94,8 @@ class PlannerWorker(Worker):
                     dest_id=self.task_node_id,
                     relation="achieves"
                 )
+
+    
+
+        
 

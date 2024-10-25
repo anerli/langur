@@ -1,7 +1,7 @@
 from typing import ClassVar
 from langur.graph.graph import Graph
 from langur.graph.node import Node
-from langur.workers.worker import Worker
+from langur.workers.worker import STATE_DONE, STATE_SETUP, Worker
 
 class TaskNode(Node):
     tags: ClassVar[list[str]] = ["task"]
@@ -15,10 +15,11 @@ class TaskNode(Node):
 class TaskWorker(Worker):
     task: str
     node_id: str
+    # def __init__(self, task: str, node_id: str):
+    #     super().__init__(task=task, node_id=node_id)
 
-    def __init__(self, task: str, node_id: str):
-        super().__init__(task=task, node_id=node_id)
-
-    async def setup(self, graph: Graph):
-        task_node = TaskNode(id=self.node_id, task=self.task)
-        graph.add_node(task_node)
+    async def cycle(self, graph: Graph):
+        if self.state == STATE_SETUP:
+            task_node = TaskNode(id=self.node_id, task=self.task)
+            graph.add_node(task_node)
+            self.state = STATE_DONE

@@ -3,8 +3,15 @@ from typing import Callable, ClassVar
 from baml_py import ClientRegistry
 import networkx as nx
 from ipysigma import Sigma
+
+from langur.workers.worker import STATE_DONE
 from .node import Node
 from .edge import Edge
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from langur.workers.worker import Worker
 
 class NodeCollisionError(RuntimeError):
     pass
@@ -12,14 +19,21 @@ class NodeCollisionError(RuntimeError):
 
 class Graph:
     '''Knowledge Graph / Task Graph'''
-    def __init__(self, cr: ClientRegistry):
+    def __init__(self, workers: list['Worker'], cr: ClientRegistry):
         self._node_map: dict[str, Node] = {}
         self.edges: set[Edge] = set()
-        # having goal_node ctr is a huge hack but im moving it anyway shutup
         
+        # sus? graph is clearly more than a graph at this point
+        self.workers = workers
         self.cr = cr
 
-    
+    def get_workers_with_state(self, state: str) -> list['Worker']:
+        # could make more efficient by having workers callback on state change and keeping a map from state to workers
+        return list(filter(lambda worker: worker.state == state, self.workers))
+
+    def are_workers_done(self):
+        return len(self.get_workers_with_state(STATE_DONE)) == len(self.workers)
+
     def get_nodes(self) -> set[Node]:
         return set(self._node_map.values())
 
@@ -161,7 +175,8 @@ class Graph:
         }
 
     @classmethod
-    def from_json(cls, data: dict) -> 'Graph':
+    def from_json(cls, data: dict, workers: list['Worker']) -> 'Graph':
+        # have to pass in workers here as well
         nodes = [Node.from_json(node_data) for node_data in data["nodes"]]
         node_map = {node.id: node for node in nodes}
 
@@ -177,7 +192,7 @@ class Graph:
         # HUGE HACK FOR GOAL NODE DONT LOOK
         #graph = Graph("foo", ClientRegistry(), list(filter(lambda n: n.id == "final_goal", nodes))[0])
         # TODO: deal w ClientRegistry serde idk
-        graph = Graph(ClientRegistry())
+        graph = Graph(workers=workers, cr=ClientRegistry())
 
         for node in nodes:
             graph.add_node(node)
