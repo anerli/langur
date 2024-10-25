@@ -1,15 +1,22 @@
 import json
-from typing import Callable
+from typing import Callable, ClassVar
 from baml_py import ClientRegistry
 import networkx as nx
 from ipysigma import Sigma
-from langur.workers.subtask_planner import TaskNode
 from .node import Node
 from .edge import Edge
 
 class NodeCollisionError(RuntimeError):
     pass
 
+class TaskNode(Node):
+    tags: ClassVar[list[str]] = ["task"]
+
+    task: str
+    #action_types: list[str]
+    
+    def content(self):
+        return f"{self.task} {self.action_types}"
     
 class Graph:
     '''Knowledge Graph / Task Graph'''
@@ -21,7 +28,7 @@ class Graph:
         if goal_node:
             self.goal_node = goal_node
         else:
-            self.goal_node = TaskNode("final_goal", goal, [])
+            self.goal_node = TaskNode(id="final_goal", task=goal)
             self.add_node(self.goal_node)
         
         self.cr = cr
@@ -64,9 +71,6 @@ class Graph:
     def to_networkx(self):
         g = nx.DiGraph()
         for node in self.get_nodes():
-            #node_attributes = {attr: getattr(node, attr) for attr in dir(node) if not attr.startswith('__') and not callable(getattr(node, attr))}
-            #print("Hello?")
-            #print("Attrs:", node.get_visual_attributes())
             # Convert any nested json in node properties to string so can be seen properly instead of [object Object]
             data = node.to_json()
             for key in data.keys():

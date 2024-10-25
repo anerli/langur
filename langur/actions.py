@@ -38,14 +38,6 @@ class ActionNode(Node):
         formatted_inputs = json.dumps(self.params)
         return f"Action Use ID: {self.id}\nAction Inputs:\n{formatted_inputs}"
 
-    # def get_visual_attributes(self):
-    #     formatted_inputs = json.dumps(self.params)
-    #     return {
-    #         **super().get_visual_attributes(),
-    #         "params": formatted_inputs,
-    #         #"thoughts": self.thoughts
-    #     }
-
     def to_json(self) -> dict:
         return {
             **super().to_json(),
@@ -59,51 +51,20 @@ class ActionNode(Node):
 
 
 class ActionDefinitionNode(Node):
+    '''
+    description: natural language description of exactly what this action does
+    schema: JSON schema defining input for this action
+    '''
     tags: ClassVar[list[str]] = ["action_definition"]
     #edges: Set['Edge'] = Field(default_factory=set, exclude=True)
 
     description: str
-    # TODO: deal w params, obviously not serializable
     #params: list[ActionParameter] = Field(exclude=True)
-    # tmp, assume all strings and just have names - until BAML supports dynamic types from JSON schema
+    # TODO: tmp, assume all strings and just have names - until BAML supports dynamic types from JSON schema
     params: list[str]
     
-    
-
-    # def __init__(self, action_id: str, description: str, params: list[ActionParameter]):#schema: dict[str, FieldType]):
-    #     '''
-    #     description: natural language description of exactly what this action does
-    #     schema: JSON schema defining input for this action
-    #     '''
-    #     super().__init__(id=action_id, description=description, params=params)
-    #     self.description = description
-    #     self.params = params
     
     def content(self) -> str:
         #formatted_schema = json.dumps(self.schema)
         params = ", ".join(str(p) for p in self.params)
         return f"Action ID: {self.id}\nAction Description: {self.description}\nAction Parameters: {params}"#\nAction Input Schema:\n{formatted_schema}
-
-    # def get_visual_attributes(self):
-    #     #formatted_schema = json.dumps(self.schema)
-    #     # Ideally we would show param types as well, but no easy way to get str representation of FieldType
-    #     params = ", ".join(str(p) for p in self.params)
-    #     return {
-    #         **super().get_visual_attributes(),
-    #         "description": self.description,
-    #         "params": params
-    #         #"schema": formatted_schema
-    #     }
-    
-    # def to_json(self) -> dict:
-    #     return {
-    #         **super().to_json(),
-    #         "description": self.description,
-    #         "params": self.params
-    #     }
-    
-    # @classmethod
-    # def from_json(cls, data: dict) -> 'ActionUseNode':
-    #     return ActionUseNode(data["id"], data["description"], data["params"])
-
-#ActionDefinitionNode()
