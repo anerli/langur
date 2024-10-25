@@ -1,10 +1,10 @@
 // Learn more about clients at https://docs.boundaryml.com/docs/snippets/clients/overview
 
 client<llm> Default {
-    provider openai
+    provider anthropic
     options {
-        model "gpt-4o-mini"
-        api_key env.OPENAI_API_KEY
+        model "claude-3-5-sonnet-20241022"
+        api_key env.ANTHROPIC_API_KEY
         temperature 0.0
     }
 }

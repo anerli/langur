@@ -12,7 +12,7 @@ from langur.workers.worker import Worker
 from langur.graph.graph import Graph
 
 class Langur:
-    def __init__(self, goal: str, llm: Literal['Default', 'Fast', 'Smart'] = 'Default', graph: Graph = None):
+    def __init__(self, llm: Literal['Default', 'Fast', 'Smart'] = 'Default', graph: Graph = None):
         # TODO jank ctor, should have a clear one (high lvl) and ugly one separate - maybe agent builder or something idk
         # TODO: eventually make so one agent can do various goals thus re-using brain state pathways etc cleverly
         self.cr = ClientRegistry()
@@ -33,7 +33,7 @@ class Langur:
         
         #self.world = World()
         #self.goal = goal
-        self.graph = graph if graph else Graph(goal, self.cr)
+        self.graph = graph if graph else Graph(self.cr)
         self.workers = []
 
         

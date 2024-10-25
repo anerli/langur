@@ -9,27 +9,13 @@ from .edge import Edge
 class NodeCollisionError(RuntimeError):
     pass
 
-class TaskNode(Node):
-    tags: ClassVar[list[str]] = ["task"]
 
-    task: str
-    #action_types: list[str]
-    
-    def content(self):
-        return f"{self.task} {self.action_types}"
-    
 class Graph:
     '''Knowledge Graph / Task Graph'''
-    def __init__(self, goal: str, cr: ClientRegistry, goal_node: Node = None):
+    def __init__(self, cr: ClientRegistry):
         self._node_map: dict[str, Node] = {}
         self.edges: set[Edge] = set()
         # having goal_node ctr is a huge hack but im moving it anyway shutup
-        self.goal = goal
-        if goal_node:
-            self.goal_node = goal_node
-        else:
-            self.goal_node = TaskNode(id="final_goal", task=goal)
-            self.add_node(self.goal_node)
         
         self.cr = cr
 
@@ -189,7 +175,9 @@ class Graph:
             edges.append(edge)
 
         # HUGE HACK FOR GOAL NODE DONT LOOK
-        graph = Graph("foo", ClientRegistry(), list(filter(lambda n: n.id == "final_goal", nodes))[0])
+        #graph = Graph("foo", ClientRegistry(), list(filter(lambda n: n.id == "final_goal", nodes))[0])
+        # TODO: deal w ClientRegistry serde idk
+        graph = Graph(ClientRegistry())
 
         for node in nodes:
             graph.add_node(node)

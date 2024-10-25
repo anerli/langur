@@ -9,7 +9,11 @@ if TYPE_CHECKING:
     from langur.graph.graph import Graph
 
 class Worker(BaseModel, ABC):
-    '''Meta-cognitive Worker'''
+    '''
+    Meta-cognitive Worker
+    
+    Be careful when overriding __init__, kwargs must include all custom properties in order to be automatically deserialized properly.
+    '''
 
     _subclasses: ClassVar[Dict[str, Type['Worker']]] = {}
 

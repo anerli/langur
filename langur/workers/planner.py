@@ -4,8 +4,14 @@ from langur.graph.graph import Graph
 from langur.workers.worker import Worker
 import langur.baml_client as baml
 
+from typing import TYPE_CHECKING
 
-class Planner(Worker):
+if TYPE_CHECKING:
+    from .task import TaskNode
+
+class PlannerWorker(Worker):
+    task_node_id: str
+
     async def cycle(self, graph: Graph):
         action_def_nodes: list[ActionDefinitionNode] = graph.query_nodes_by_tag("action_definition")
     
@@ -31,8 +37,9 @@ class Planner(Worker):
 
         tb.ActionNode.add_property("action_input", tb.union(action_input_types)).description("Provide inputs if known else null. Do not hallicinate values.")
 
+        task_node: 'TaskNode' = graph.query_node_by_id(self.task_node_id)
         resp = await baml.b.PlanActions(
-            goal=graph.goal,
+            goal=task_node.task,
             observables="\n".join([node.content() for node in graph.query_nodes_by_tag("observable")]),
             action_types="\n".join([f"- {node.id}: {node.description}" for node in action_def_nodes]),
             baml_options={
@@ -73,7 +80,7 @@ class Planner(Worker):
             if len(node.outgoing_edges()) == 0:
                 graph.add_edge_by_ids(
                     src_id=node.id,
-                    dest_id="final_goal",
+                    dest_id=self.task_node_id,
                     relation="achieves"
                 )
 
