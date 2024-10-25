@@ -1,3 +1,4 @@
+import json
 from typing import Callable
 from baml_py import ClientRegistry
 import networkx as nx
@@ -66,7 +67,12 @@ class Graph:
             #node_attributes = {attr: getattr(node, attr) for attr in dir(node) if not attr.startswith('__') and not callable(getattr(node, attr))}
             #print("Hello?")
             #print("Attrs:", node.get_visual_attributes())
-            g.add_node(node.id, node_class=node.__class__.__name__, **node.to_json())
+            # Convert any nested json in node properties to string so can be seen properly instead of [object Object]
+            data = node.to_json()
+            for key in data.keys():
+                if isinstance(data[key], dict):
+                    data[key] = json.dumps(data[key])
+            g.add_node(node.id, node_class=node.__class__.__name__, **data)
         for edge in self.edges:
             g.add_edge(edge.src_node.id, edge.dest_node.id, label=edge.relation)
         return g

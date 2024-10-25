@@ -24,7 +24,7 @@ class TaskNode(Node):
     def content(self):
         return f"{self.task} {self.action_types}"
 
-class Planner(Worker):
+class SubtaskPlanner(Worker):
     '''Creates subgraph of subtasks necessary to achieve final goal'''
 
     def get_setup_order(self) -> int:
@@ -36,7 +36,7 @@ class Planner(Worker):
         resp = await baml.b.PlanSubtasks(
             goal=graph.goal,
             graph_context=graph.build_context(),
-            action_types="\n".join([f"- {node.id}" for node in graph.query_nodes_by_tag("action_definition")]),
+            action_types="\n".join([f"- {node.id}: {node.description}" for node in graph.query_nodes_by_tag("action_definition")]),
             baml_options={"client_registry": graph.cr}
         )
 

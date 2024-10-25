@@ -9,7 +9,7 @@
 //     @@dynamic
 // }
 
-class Action {
+class OldAction {
     node_id string @description("A unique natural language ID in lower_snake_case which reflects the action use.")
     //action_type ActionType
     upstream_action_ids string[] @description("Define which other actions this one depends on")
@@ -18,7 +18,7 @@ class Action {
 }
 
 
-function TaskToActions (goal: string, observables: string, task: string, action_definitions: string, upstream_actions: string) -> Action[] {
+function TaskToActions (goal: string, observables: string, task: string, action_definitions: string, upstream_actions: string) -> OldAction[] {
     client Default
     prompt #"
         You are a component of a graph-driven agentic LLM system.

@@ -21,16 +21,18 @@ class ActionParameter:
             return f"{self.param_key}"
 
 
-class ActionUseNode(Node):
+class ActionNode(Node):
     tags: ClassVar[list[str]] = ["action"]
 
     params: dict
+    # What this specific action is for
+    description: str
     
-    def __init__(self, id: str, params: dict):#, thoughts: str):
-        '''params: empty, partial, or full input dict'''
-        super().__init__(id=id, params=params)
-        #self.params = params
-        #self.thoughts = thoughts
+    # def __init__(self, id: str, params: dict):#, thoughts: str):
+    #     '''params: empty, partial, or full input dict'''
+    #     super().__init__(id=id, params=params)
+    #     #self.params = params
+    #     #self.thoughts = thoughts
     
     def content(self):
         formatted_inputs = json.dumps(self.params)
@@ -51,8 +53,8 @@ class ActionUseNode(Node):
         }
     
     @classmethod
-    def from_json(cls, data: dict) -> 'ActionUseNode':
-        return ActionUseNode(data["id"], data["params"])
+    def from_json(cls, data: dict) -> 'ActionNode':
+        return ActionNode(data["id"], data["params"])
 
 
 
