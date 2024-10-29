@@ -15,14 +15,94 @@ import langur.baml_client as baml
 from typing import TYPE_CHECKING
 
 
-class WorkspaceOverviewNode(Node):
-    overview: str
+# class WorkspaceOverviewNode(Node):
+#     overview: str
+
+#     # leaving this since something queries for it
+#     tags = ["observable"]
+
+#     def content(self):
+#         return self.overview
+
+
+
+class WorkspaceNode(Node):
+    # Corresponding connector properties to reference
+    # More automatic way to do this that's not insane?
+    # Or a way to get the corresponding worker?
+    # But having serialized references from nodes to workers seems odd?
+    workspace_path: str
+
+    def get_fs(self):
+        return OSFS(self.workspace_path)
+
+
+class WorkspaceOverviewNode(WorkspaceNode):
+    id: str = "workspace"
+    #overview: str
 
     # leaving this since something queries for it
     tags = ["observable"]
 
     def content(self):
-        return self.overview
+        return self.overview()
+    
+    def overview(self) -> str:
+        s = "The current working directory is `.`, which contains these files/subdirectories:\n"
+        walker = Walker()
+        file_list = []
+
+        for path, directories, files in walker.walk(self.get_fs()):
+            for file_info in files:
+                file_path = "." + os.path.join(path, file_info.name)
+                unix_style_path = file_path.replace(os.sep, "/")
+                file_list.append(unix_style_path)
+        s += "\n".join(file_list)
+        return s
+
+class FileReadDefinitionNode(WorkspaceNode, ActionDefinitionNode):
+    id: str = "FILE_READ"
+    description: str = "Read a single file's contents."
+    params: list[str] = ["file_path"]
+
+    # todo: derive params from func signature
+    # def execute(self, file_path: str) -> str:
+    #     with self.get_fs().open(file_path, "r") as f:
+    #         return f.read()
+
+    # This is NOT the high level API, so it doesn't have to be super pretty - will have an adapter
+    def execute(self, params, context) -> str:
+        with self.get_fs().open(params["file_path"], "r") as f:
+            return f.read()
+
+class FileWriteDefinitionNode(WorkspaceNode, ActionDefinitionNode):
+    id: str = "FILE_WRITE"
+    description: str = "Overwrite a file's contents."
+    #description="Read and subsequently overwrite a file's contents."
+    params: list[str] = ["file_path", "new_content"]
+
+    # todo: derive params from func signature
+    # def execute(self, file_path: str, new_content: str) -> str:
+    #     with self.get_fs().open(file_path, "w") as f:
+    #         f.write(new_content)
+    #     return new_content
+    
+    def execute(self, params, context) -> str:
+        with self.get_fs().open(params["file_path"], "w") as f:
+            f.write(params["new_content"])
+        return params["new_content"]
+
+class ThinkDefinitionNode(ActionDefinitionNode):
+    id: str = "THINK"
+    description: str = "Do purely cognitive processing."
+    params: list[str] = []
+
+    # TOdo: uhh how do we get context in here?
+    # prev pattern we had like world, memory
+    # special context parameter?? or property? idkkkkkk
+    def execute(self, params, context) -> str:
+        # TODO: llm "think" call using context
+        return ""
 
 class WorkspaceConnector(Worker):
     '''Manages cognitive relations between the nexus and filesystem actions'''
@@ -42,52 +122,47 @@ class WorkspaceConnector(Worker):
     def get_fs(self):
         return OSFS(self.workspace_path)
     
-    def overview(self) -> str:
-        s = "The current working directory is `.`, which contains these files/subdirectories:\n"
-        walker = Walker()
-        file_list = []
-
-        for path, directories, files in walker.walk(self.get_fs()):
-            for file_info in files:
-                file_path = "." + os.path.join(path, file_info.name)
-                unix_style_path = file_path.replace(os.sep, "/")
-                file_list.append(unix_style_path)
-        s += "\n".join(file_list)
-        return s
+    
     
     async def cycle(self, graph: Graph):
         if self.state == STATE_SETUP:
             # Create nodes for workspace actions and dynamic workspace overview
+            # graph.add_node(
+            #     WorkspaceOverviewNode(id="workspace", overview=self.overview())
+            # )
             graph.add_node(
-                WorkspaceOverviewNode(id="workspace", overview=self.overview())
+                WorkspaceOverviewNode(workspace_path=self.workspace_path)
             )
-            graph.add_node(
-                ActionDefinitionNode(
-                    id="FILE_READ",
-                    description="Read a single file's contents.",
-                    #schema={"file_path": tb.string()}
-                    #params=[ActionParameter("file_path", tb.string())]
-                    params=["file_path"]
-                )
-            ),
-            graph.add_node(
-                ActionDefinitionNode(
-                    id="FILE_WRITE",
-                    description="Read and subsequently overwrite a file's contents.",
-                    #schema={"file_path": tb.string(), "new_content": tb.string()}
-                    params=[
-                        #ActionParameter("file_path", tb.string()),
-                        #ActionParameter("new_content", tb.string(), "Content to replace existing")
-                        "file_path", "new_content"
-                    ]
-                )
-            )
-            graph.add_node(
-                ActionDefinitionNode(
-                    id="THINK",
-                    description="Do purely cognitive processing.",
-                    #schema={}
-                    params=[]
-                )
-            )
+            # graph.add_node(
+            #     ActionDefinitionNode(
+            #         id="FILE_READ",
+            #         description="Read a single file's contents.",
+            #         #schema={"file_path": tb.string()}
+            #         #params=[ActionParameter("file_path", tb.string())]
+            #         params=["file_path"]
+            #     )
+            # ),
+            # graph.add_node(
+            #     ActionDefinitionNode(
+            #         id="FILE_WRITE",
+            #         description="Read and subsequently overwrite a file's contents.",
+            #         #schema={"file_path": tb.string(), "new_content": tb.string()}
+            #         params=[
+            #             #ActionParameter("file_path", tb.string()),
+            #             #ActionParameter("new_content", tb.string(), "Content to replace existing")
+            #             "file_path", "new_content"
+            #         ]
+            #     )
+            # )
+            # graph.add_node(
+            #     ActionDefinitionNode(
+            #         id="THINK",
+            #         description="Do purely cognitive processing.",
+            #         #schema={}
+            #         params=[]
+            #     )
+            # )
+            graph.add_node(FileReadDefinitionNode(workspace_path=self.workspace_path))
+            graph.add_node(FileWriteDefinitionNode(workspace_path=self.workspace_path))
+            graph.add_node(ThinkDefinitionNode(workspace_path=self.workspace_path))
             self.state = STATE_DONE

@@ -1,5 +1,5 @@
 import json
-from typing import Callable, ClassVar
+from typing import Callable, ClassVar, Type, TypeVar
 from baml_py import ClientRegistry
 import networkx as nx
 from ipysigma import Sigma
@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 class NodeCollisionError(RuntimeError):
     pass
 
+N = TypeVar('N')#, Node)
 
 class Graph:
     '''Knowledge Graph / Task Graph'''
@@ -103,6 +104,16 @@ class Graph:
                     matches.add(node)
                     break
         return matches
+    
+    # Not sure if I prefer this approach or tags
+    # It is probably preferable to return subclasses as well..
+    # def query_nodes_by_type(self, node_type: Type[N]) -> set[N]:
+    #     # NOTE: Matches by class name, does NOT match subclasses
+    #     matches = set()
+    #     for node in self.get_nodes():
+    #         if node.__class__.__name__ == node_type.__name__:
+    #             matches.add(node)
+    #     return matches
 
     def remove_edge(self, edge: Edge):
         edge.src_node.edges.remove(edge)

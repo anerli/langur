@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import json
 from typing import ClassVar, Set
 
@@ -27,6 +28,10 @@ class ActionNode(Node):
     params: dict
     # What this specific action is for
     description: str
+
+    # If action has been executed, it will have attached output
+    # For now at least, this output from execution should always be a string
+    output: str = None
     
     # def __init__(self, id: str, params: dict):#, thoughts: str):
     #     '''params: empty, partial, or full input dict'''
@@ -50,7 +55,8 @@ class ActionNode(Node):
 
 
 
-class ActionDefinitionNode(Node):
+
+class ActionDefinitionNode(Node, ABC):
     '''
     description: natural language description of exactly what this action does
     schema: JSON schema defining input for this action
@@ -58,13 +64,23 @@ class ActionDefinitionNode(Node):
     tags: ClassVar[list[str]] = ["action_definition"]
     #edges: Set['Edge'] = Field(default_factory=set, exclude=True)
 
+    # general connector worker
+    #worker: Worker
+
     description: str
     #params: list[ActionParameter] = Field(exclude=True)
     # TODO: tmp, assume all strings and just have names - until BAML supports dynamic types from JSON schema
     params: list[str]
+
+    #context: str
     
     
     def content(self) -> str:
         #formatted_schema = json.dumps(self.schema)
         params = ", ".join(str(p) for p in self.params)
         return f"Action ID: {self.id}\nAction Description: {self.description}\nAction Parameters: {params}"#\nAction Input Schema:\n{formatted_schema}
+
+    @abstractmethod
+    def execute(self, params: dict[str, str], context: str): ...
+    #def execute(self, *args, **kwargs) -> str: ...
+    
