@@ -38,8 +38,6 @@ class ExecutorWorker(Worker):
 
     async def fill_params(self, graph: Graph, action_node: ActionNode, action_definition_node: ActionDefinitionNode, context: str):
         empty_params = [k for k, v in action_node.params.items() if v is None]
-        #TODO
-        print(empty_params)
 
         if len(empty_params) == 0:
             return
@@ -95,7 +93,7 @@ class ExecutorWorker(Worker):
 
         #print("Context:", context)
 
-        output = action_definition_node.execute(
+        output = await action_definition_node.execute(
             params=action_node.params,
             context=context
         )

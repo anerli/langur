@@ -71,7 +71,7 @@ class FileReadDefinitionNode(WorkspaceNode, ActionDefinitionNode):
     #         return f.read()
 
     # This is NOT the high level API, so it doesn't have to be super pretty - will have an adapter
-    def execute(self, params, context) -> str:
+    async def execute(self, params, context) -> str:
         with self.get_fs().open(params["file_path"], "r") as f:
             content = f.read()
         return f"I read {params['file_path']}, it contains:\n```\n{content}\n```"
@@ -90,11 +90,11 @@ class FileWriteDefinitionNode(WorkspaceNode, ActionDefinitionNode):
 
     # def extra_context(self) -> str
     
-    def execute(self, params, context) -> str:
+    async def execute(self, params, context) -> str:
         with self.get_fs().open(params["file_path"], "w") as f:
             f.write(params["new_content"])
         #return params["new_content"]
-        return f"I overwrote {params['file_path']}, it now contains:\n```\n{params["new_content"]}\n```"
+        return f"I overwrote {params['file_path']}, it now contains:\n```\n{params['new_content']}\n```"
 
 class ThinkDefinitionNode(ActionDefinitionNode):
     id: str = "THINK"
@@ -104,9 +104,10 @@ class ThinkDefinitionNode(ActionDefinitionNode):
     # TOdo: uhh how do we get context in here?
     # prev pattern we had like world, memory
     # special context parameter?? or property? idkkkkkk
-    def execute(self, params, context) -> str:
-        # TODO: llm "think" call using context
-        return ""
+    async def execute(self, params, context) -> str:
+        # TODO: Not using the graph's client registry here so this uses fallback llm, which means its not properly configurable
+        return await baml.b.Think(context=context, description=self.description)
+        #return ""
 
 class WorkspaceConnector(Worker):
     '''Manages cognitive relations between the nexus and filesystem actions'''
