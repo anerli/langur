@@ -20,7 +20,7 @@ class ActionTest {
 
 
 function TaskToActionsTest (goal: string, observables: string, task: string, action_definitions: string, upstream_actions: string) -> ActionTest[] {
-    client Default
+    client Fallback
     prompt #"
         You are a component of a graph-driven agentic LLM system.
 

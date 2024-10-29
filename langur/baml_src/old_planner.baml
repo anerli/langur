@@ -15,7 +15,7 @@ class SubtaskSubgraph {
 }
 
 function PlanSubtasks (goal: string, graph_context: string, action_types: string) -> SubtaskSubgraph {
-    client Default
+    client Fallback
     prompt #"
         You are a component of a graph-driven agentic LLM system.
 

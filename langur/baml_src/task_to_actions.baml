@@ -19,7 +19,7 @@ class OldAction {
 
 
 function TaskToActions (goal: string, observables: string, task: string, action_definitions: string, upstream_actions: string) -> OldAction[] {
-    client Default
+    client Fallback
     prompt #"
         You are a component of a graph-driven agentic LLM system.
 

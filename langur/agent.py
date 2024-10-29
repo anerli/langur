@@ -4,22 +4,25 @@ import asyncio
 import json
 import os
 import pickle
-from typing import Literal
+from typing import Any, Dict, Literal, Optional
 from baml_py import ClientRegistry
+from pydantic import BaseModel
 from langur.connectors.connector import Connector
+from langur.llm import LLMConfig
 from langur.workers.worker import STATE_DONE, Worker
 #from langur.world import World
 from langur.graph.graph import Graph
+
+
 
 class Agent:
     '''
     Lower level agent representation.
     Use Langur instead for high level usage.
     '''
-    def __init__(self, workers: list[Worker], llm: Literal['Default', 'Fast', 'Smart'] = 'Default', graph: Graph = None):
+    def __init__(self, workers: list[Worker], llm_config: LLMConfig = None, graph: Graph = None):
         # TODO jank ctor, should have a clear one (high lvl) and ugly one separate - maybe agent builder or something idk
         # TODO: eventually make so one agent can do various goals thus re-using brain state pathways etc cleverly
-        self.cr = ClientRegistry()
         # self.cr.add_llm_client(name='mini', provider='openai', options={
         #     "model": "gpt-4o-mini",
         #     "temperature": 0.0,
@@ -31,13 +34,17 @@ class Agent:
         #     "api_key": os.environ.get('OPENAI_API_KEY')
         # })
 
-        # idk jank
-        self.llm = llm
-        self.cr.set_primary(llm)
+        self.llm_config = llm_config if llm_config else LLMConfig(
+            provider="anthropic",
+            options={
+                "model": "claude-3-5-sonnet-20241022",
+                "temperature": 0.0
+            }
+        )
         
         #self.world = World()
         #self.goal = goal
-        self.graph = graph if graph else Graph(workers=workers, cr=self.cr)
+        self.graph = graph if graph else Graph(workers=workers, llm_config=self.llm_config)
         self.workers = workers
 
         
@@ -98,7 +105,7 @@ class Agent:
     
     def to_json(self) -> dict:
         return {
-            "llm": self.llm,
+            "llm": self.llm_config.model_dump(mode="json"),
             "workers": [worker.to_json() for worker in self.workers],
             "graph": self.graph.to_json()
         }
@@ -110,17 +117,18 @@ class Agent:
 
         # )
         workers = [Worker.from_json(worker_data) for worker_data in data["workers"]]
-        graph = Graph.from_json(data=data["graph"], workers=workers)
-        # jank, goal should be a worker anyway
-        #goal = graph.query_node_by_id("final_goal").content
+        llm_config = LLMConfig.model_validate(data["llm"])
+        graph = Graph.from_json(
+            data=data["graph"],
+            workers=workers,
+            llm_config=llm_config
+        )
         agent = Agent(
             workers=workers,
             #goal=goal,
-            llm=data["llm"],
+            llm_config=llm_config,#data["llm"],
             graph=graph
         )
-        #agent.add_workers(workers, setup=False)
-        #agent.add_workers_nosetup(workers)
         return agent
 
 

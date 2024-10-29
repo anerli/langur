@@ -55,7 +55,7 @@ class PlannerWorker(Worker):
             action_types="\n".join([f"- {node.id}: {node.description}" for node in action_def_nodes]),
             baml_options={
                 "tb": tb,
-                "client_registry": graph.cr
+                "client_registry": graph.get_client_registry()
             }
         )
         

@@ -4,6 +4,7 @@ from baml_py import ClientRegistry
 import networkx as nx
 from ipysigma import Sigma
 
+from langur.llm import LLMConfig
 from langur.workers.worker import STATE_DONE
 from .node import Node
 from .edge import Edge
@@ -19,13 +20,18 @@ class NodeCollisionError(RuntimeError):
 
 class Graph:
     '''Knowledge Graph / Task Graph'''
-    def __init__(self, workers: list['Worker'], cr: ClientRegistry):
+    def __init__(self, workers: list['Worker'], llm_config: LLMConfig):#cr: ClientRegistry):
         self._node_map: dict[str, Node] = {}
         self.edges: set[Edge] = set()
         
         # sus? graph is clearly more than a graph at this point
         self.workers = workers
-        self.cr = cr
+        #self.cr = cr
+        print("llm_config", llm_config)
+        self.llm_config = llm_config
+    
+    def get_client_registry(self) -> ClientRegistry:
+        return self.llm_config.to_registry()
 
     def get_workers_with_state(self, state: str) -> list['Worker']:
         # could make more efficient by having workers callback on state change and keeping a map from state to workers
@@ -175,8 +181,8 @@ class Graph:
         }
 
     @classmethod
-    def from_json(cls, data: dict, workers: list['Worker']) -> 'Graph':
-        # have to pass in workers here as well
+    def from_json(cls, data: dict, workers: list['Worker'], llm_config: LLMConfig) -> 'Graph':
+        # Passing in the actual data with graph stuff as well as workers and llm_config from agent
         nodes = [Node.from_json(node_data) for node_data in data["nodes"]]
         node_map = {node.id: node for node in nodes}
 
@@ -189,10 +195,7 @@ class Graph:
             )
             edges.append(edge)
 
-        # HUGE HACK FOR GOAL NODE DONT LOOK
-        #graph = Graph("foo", ClientRegistry(), list(filter(lambda n: n.id == "final_goal", nodes))[0])
-        # TODO: deal w ClientRegistry serde idk
-        graph = Graph(workers=workers, cr=ClientRegistry())
+        graph = Graph(workers=workers, llm_config=llm_config)
 
         for node in nodes:
             graph.add_node(node)

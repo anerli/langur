@@ -24,7 +24,7 @@ class Graph {
 }
 
 function PlanActions (goal: string, observables: string, action_types: string) -> Graph {
-    client Default
+    client Fallback
     prompt #"
         You are a component of a graph-driven agentic LLM system.
 
