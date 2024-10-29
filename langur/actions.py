@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import json
-from typing import ClassVar, Set
+from typing import ClassVar, Optional, Set
 
 from pydantic import Field
 
@@ -31,7 +31,7 @@ class ActionNode(Node):
 
     # If action has been executed, it will have attached output
     # For now at least, this output from execution should always be a string
-    output: str = None
+    output: Optional[str] = None
     
     # def __init__(self, id: str, params: dict):#, thoughts: str):
     #     '''params: empty, partial, or full input dict'''

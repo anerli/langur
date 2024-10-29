@@ -1,10 +1,11 @@
 import json
-from typing import Callable, ClassVar, Type, TypeVar
+from typing import Callable, ClassVar, Set, Type, TypeVar
 from baml_py import ClientRegistry
 import networkx as nx
 from ipysigma import Sigma
 
 from langur.llm import LLMConfig
+from langur.util.type_index import TypeIndex
 from langur.workers.worker import STATE_DONE
 from .node import Node
 from .edge import Edge
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
 class NodeCollisionError(RuntimeError):
     pass
 
-N = TypeVar('N')#, Node)
+N = TypeVar('N', bound='Node')#, Node)
 
 class Graph:
     '''Knowledge Graph / Task Graph'''
@@ -30,6 +31,8 @@ class Graph:
         #self.cr = cr
         print("llm_config", llm_config)
         self.llm_config = llm_config
+
+        self._type_index: TypeIndex[Node] = TypeIndex()
     
     def get_client_registry(self) -> ClientRegistry:
         return self.llm_config.to_registry()
@@ -51,6 +54,7 @@ class Graph:
         if node.id in self._node_map:
             raise NodeCollisionError("Node ID collision when adding node:", node)
         self._node_map[node.id] = node
+        self._type_index.add(node)
         #self.nodes.add(node)
     
     def has_node(self, node: Node) -> bool:
@@ -115,6 +119,10 @@ class Graph:
     #             matches.add(node)
     #     return matches
 
+    def query_nodes_by_type(self, node_type: Type[N]) -> Set[N]:
+        """Query nodes by type, including subclass instances"""
+        return self._type_index.get_by_type(node_type)
+
     def remove_edge(self, edge: Edge):
         edge.src_node.edges.remove(edge)
         edge.dest_node.edges.remove(edge)
@@ -125,6 +133,7 @@ class Graph:
         for edge in edges:
             self.remove_edge(edge)
         del self._node_map[node.id]
+        self._type_index.remove(node)
 
     def substitute(self, node_id: str, replacements: list[Node], keep_incoming=True, keep_outgoing=True):#, ignore_dupe_ids=False):
         '''Replace a node by swapping it out for one or more nodes, which will each assume all incoming and outgoing edges of the replaced node'''
