@@ -73,7 +73,8 @@ class FileReadDefinitionNode(WorkspaceNode, ActionDefinitionNode):
     # This is NOT the high level API, so it doesn't have to be super pretty - will have an adapter
     def execute(self, params, context) -> str:
         with self.get_fs().open(params["file_path"], "r") as f:
-            return f.read()
+            content = f.read()
+        return f"I read {params['file_path']}, it contains:\n```\n{content}\n```"
 
 class FileWriteDefinitionNode(WorkspaceNode, ActionDefinitionNode):
     id: str = "FILE_WRITE"
@@ -86,11 +87,14 @@ class FileWriteDefinitionNode(WorkspaceNode, ActionDefinitionNode):
     #     with self.get_fs().open(file_path, "w") as f:
     #         f.write(new_content)
     #     return new_content
+
+    # def extra_context(self) -> str
     
     def execute(self, params, context) -> str:
         with self.get_fs().open(params["file_path"], "w") as f:
             f.write(params["new_content"])
-        return params["new_content"]
+        #return params["new_content"]
+        return f"I overwrote {params['file_path']}, it now contains:\n```\n{params["new_content"]}\n```"
 
 class ThinkDefinitionNode(ActionDefinitionNode):
     id: str = "THINK"
