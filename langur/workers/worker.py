@@ -1,7 +1,7 @@
 from abc import ABC
 
 import langur.baml_client as baml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
 
@@ -37,11 +37,53 @@ class Worker(BaseModel, ABC):
     '''
     
     # Workers are often state machines, this state is serialized and retained
-    state: str = STATE_SETUP
+    # DO NOT SET DIRECTLY, USE set_state
+    #state: str = Field(default=STATE_SETUP)
+
+    #_state: str = PrivateAttr(default=STATE_SETUP)  # Private storage
+    state: str = Field(default=STATE_SETUP)  # Public field
+
+    # def __init__(self, **data):
+    #     super().__init__(**data)
+    #     self._state = self.state  # Sync initial value
+
+    # @property
+    # def state(self) -> str:
+    #     return self._state
+        
+    # @state.setter
+    # def state(self, value: str) -> None:
+    #     print('set state:', value)
+    #     self._state = value
 
     # Ref needs to be set after init hence optional
     #graph: Optional['Graph'] = Field(default=None, exclude=True, annotation_extractor=GraphField)
 
+    #_state: str = PrivateAttr(default=STATE_SETUP, alias='state')
+
+    # Should be set by Worker subclasses
+    #_event_prefix: ClassVar[str]
+    _subclasses: ClassVar[Dict[str, Type['Worker']]] = {}
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    # def __setattr__(self, name, value):
+    #     if name == 'state':
+    #         self._on_state_change(value)
+    #     object.__setattr__(name, value)
+    
+    # def _on_state_change(self, value):
+    #     print('new state:', value)
+
+    # @property
+    # def state(self) -> str:
+    #     return self._state
+        
+    # @state.setter
+    # def state(self, value: str) -> None:
+    #     print('set state:', value)
+    #     self._state = value
+    
     # Bypass pydantic sillyness for the graph ref
     @property
     def cg(self) -> 'CognitionGraph':
@@ -53,19 +95,15 @@ class Worker(BaseModel, ABC):
     def cg(self, value):
         self._cognition_graph = value
 
-    # Should be set by Worker subclasses
-    _event_prefix: ClassVar[str]
-    _subclasses: ClassVar[Dict[str, Type['Worker']]] = {}
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
     def __init_subclass__(cls, **kwargs):
         """Register subclasses automatically when they're defined"""
         super().__init_subclass__(**kwargs)
         Worker._subclasses[cls.__name__] = cls
 
-    def emit(self, event: str):
-        pass
+    # def emit(self, event: str):
+    #     self.cg.emit(f"{self._event_prefix}.{event}")
+
+    #def set_state()
 
     # def get_setup_order(self) -> int:
     #     '''Lower order = earlier in setup'''

@@ -118,5 +118,6 @@ class ExecutorWorker(Worker):
     
     async def cycle(self):
         # TODO super hacky, only works with exactly one executor and planner
-        if self.state == "WAITING" and len(self.cg.get_workers_with_state("WAITING")) == 1:
+        #if self.state == "WAITING" and len(self.cg.get_workers_with_state("WAITING")) == 1:
+        if self.state == "WAITING" and self.cg.worker_count(worker_type="PlannerWorker", state=STATE_DONE) == self.cg.worker_count(worker_type="PlannerWorker"):
             await self.execute_frontier()

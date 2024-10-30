@@ -20,7 +20,9 @@ class PlannerWorker(Worker):
         # could in theory cause non-deterministic number of cycles this happens async with others?
         # May happen on cycle 1 or 2 dependending on whether other workers execute first - either way it works - but maybe this is a bit odd.
         #print("Planner Cycle, workers still in SETUP:", len(graph.get_workers_with_state(STATE_SETUP)))
-        if self.state == "WAITING" and len(self.cg.get_workers_with_state(STATE_SETUP)) == 0:
+        #if self.state == "WAITING" and len(self.cg.get_workers_with_state(STATE_SETUP)) == 0:
+        #if self.state == "WAITING" and self.cg.event_occured("TaskWo")
+        if self.state == "WAITING" and self.cg.worker_count(state=STATE_SETUP) == 0:
             await self.plan_task()
             self.state = STATE_DONE
 

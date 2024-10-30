@@ -9,20 +9,19 @@ from baml_py import ClientRegistry
 from pydantic import BaseModel
 from langur.connectors.connector import Connector
 from langur.llm import LLMConfig
+from langur.state_tracker import StateTracker
 from langur.workers.worker import STATE_DONE, Worker
 #from langur.world import World
 from langur.graph.graph import CognitionGraph
 
-
+# TODO: Combine with CognitionGraph
 
 class Agent:
     '''
     Lower level agent representation.
     Use Langur instead for high level usage.
     '''
-    def __init__(self, workers: list[Worker], llm_config: LLMConfig = None, cg: CognitionGraph = None):
-        # TODO jank ctor, should have a clear one (high lvl) and ugly one separate - maybe agent builder or something idk
-        # TODO: eventually make so one agent can do various goals thus re-using brain state pathways etc cleverly
+    def __init__(self, workers: list[Worker], llm_config: LLMConfig = None, cg: CognitionGraph = None, events: set[str] = None):
         # self.cr.add_llm_client(name='mini', provider='openai', options={
         #     "model": "gpt-4o-mini",
         #     "temperature": 0.0,
@@ -46,6 +45,10 @@ class Agent:
         #self.goal = goal
         self.cg = cg if cg else CognitionGraph(workers=workers, llm_config=self.llm_config)
         self.workers = workers
+
+        self.events = events if events else set()
+
+        
 
         
     
@@ -89,7 +92,7 @@ class Agent:
         while not self.cg.are_workers_done():
             # a lil jank calling the graph thing here
             # would be cool to live update num done workers mid-cycle based on state changes - if workers were to use some hook to update state
-            print(f"[Cycle {cycle_count+1}]: {len(self.cg.get_workers_with_state(STATE_DONE))}/{len(self.workers)} workers done")
+            print(f"[Cycle {cycle_count+1}]: {self.cg.worker_count(state=STATE_DONE)}/{self.cg.worker_count()} workers done")
             await self.cycle()
             cycle_count += 1
         print("Agent done!")
@@ -102,12 +105,25 @@ class Agent:
             jobs.append(worker.cycle())
         # naive async implementation, don't need to necessarily block gather here
         await asyncio.gather(*jobs)
-    
+
+        #states = []
+        state_tracker = StateTracker()
+        # Event updates
+        for worker in self.workers:
+            # For now using class name as event worker type identifier
+            state_tracker.update(worker.__class__.__name__, worker.state)
+            #states.append(worker.state)
+
+        # janky assigning to both, unifying agent/cg classes and factoring out actual graph should help
+        self.events = state_tracker.generate_events()
+        self.cg.events = self.events
+
     def to_json(self) -> dict:
         return {
             "llm": self.llm_config.model_dump(mode="json"),
             "workers": [worker.to_json() for worker in self.workers],
-            "graph": self.cg.to_json()
+            "events": self.events,
+            "graph": self.cg.to_json(),
         }
 
     @classmethod
@@ -121,13 +137,15 @@ class Agent:
         graph = CognitionGraph.from_json(
             data=data["graph"],
             workers=workers,
-            llm_config=llm_config
+            llm_config=llm_config,
+            events=data["events"]
         )
         agent = Agent(
             workers=workers,
             #goal=goal,
             llm_config=llm_config,#data["llm"],
-            cg=graph
+            cg=graph,
+            events=data["events"]
         )
         return agent
 

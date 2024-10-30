@@ -20,13 +20,17 @@ class NodeCollisionError(RuntimeError):
 
 N = TypeVar('N', bound='Node')#, Node)
 
+# TODO: Combine with low-level Agent and factor out actual graph component
+
 class CognitionGraph:
-    def __init__(self, workers: list['Worker'], llm_config: LLMConfig):#cr: ClientRegistry):
+    def __init__(self, workers: list['Worker'], llm_config: LLMConfig, events: set[str] = None):#cr: ClientRegistry):
         self._node_map: dict[str, Node] = {}
         self.edges: set[Edge] = set()
         
-        # sus? graph is clearly more than a graph at this point
         self.workers = workers
+
+        # Any events from last cycle that workers should be aware of
+        self.events = events if events else set()
 
         # Give graph ref to workers
         for worker in workers:
@@ -38,15 +42,50 @@ class CognitionGraph:
 
         self._type_index: TypeIndex[Node] = TypeIndex()
     
+    def event_occured(self, event: str):
+        return event in self.events
+    
     def get_client_registry(self) -> ClientRegistry:
         return self.llm_config.to_registry()
 
-    def get_workers_with_state(self, state: str) -> list['Worker']:
-        # could make more efficient by having workers callback on state change and keeping a map from state to workers
-        return list(filter(lambda worker: worker.state == state, self.workers))
+    # def get_workers_with_state(self, state: str) -> list['Worker']:
+    #     # could make more efficient by having workers callback on state change and keeping a map from state to workers
+    #     return list(filter(lambda worker: worker.state == state, self.workers))
+
+    # def get_workers_with_state(self, state: str) -> list['Worker']:
+    #     # could make more efficient by having workers callback on state change and keeping a map from state to workers
+    #     return list(filter(lambda worker: worker.state == state, self.workers))
+
+    
+
+    def worker_count(self, worker_type: str | Type['Worker'] = None, state: str = None):
+        '''
+        Ugly impl, basically used for workers to help decide when other works are done doing whatever
+        '''
+        if worker_type is None and state is None:
+            return len(self.workers)
+        if worker_type is None:
+            return len(list(filter(lambda worker: worker.state == state, self.workers)))
+        if not isinstance(worker_type, str):
+            worker_type = worker_type.__name__
+        if state is None:
+            return len(list(filter(lambda worker: worker.__class__.__name__ == worker_type, self.workers)))
+        else:
+            return len(list(filter(lambda worker: worker.__class__.__name__ == worker_type and worker.state == state, self.workers)))
+
+    # def worker_state_count(self, worker_type: str | Type[Worker], state: str):
+    #     if not isinstance(worker_type, str):
+    #         worker_type = worker_type.__name__
+    #     return len(list(filter(lambda worker: worker.__class__.__name__ == worker_type and worker.state == state, self.workers)))
+    
+    # def worker_count(self, worker_type: str | Type[Worker]):
+    #     if not isinstance(worker_type, str):
+    #         worker_type = worker_type.__name__
+    #     return len(list(filter(lambda worker: worker.__class__.__name__ == worker_type, self.workers)))
 
     def are_workers_done(self):
-        return len(self.get_workers_with_state(STATE_DONE)) == len(self.workers)
+        return self.worker_count(state=STATE_DONE) == self.worker_count()
+        #return len(self.get_workers_with_state(STATE_DONE)) == len(self.workers)
 
     def get_nodes(self) -> set[Node]:
         return set(self._node_map.values())
