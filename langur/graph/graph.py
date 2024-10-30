@@ -20,14 +20,18 @@ class NodeCollisionError(RuntimeError):
 
 N = TypeVar('N', bound='Node')#, Node)
 
-class Graph:
-    '''Knowledge Graph / Task Graph'''
+class CognitionGraph:
     def __init__(self, workers: list['Worker'], llm_config: LLMConfig):#cr: ClientRegistry):
         self._node_map: dict[str, Node] = {}
         self.edges: set[Edge] = set()
         
         # sus? graph is clearly more than a graph at this point
         self.workers = workers
+
+        # Give graph ref to workers
+        for worker in workers:
+            worker.cg = self
+
         #self.cr = cr
         print("llm_config", llm_config)
         self.llm_config = llm_config
@@ -201,7 +205,7 @@ class Graph:
         }
 
     @classmethod
-    def from_json(cls, data: dict, workers: list['Worker'], llm_config: LLMConfig) -> 'Graph':
+    def from_json(cls, data: dict, workers: list['Worker'], llm_config: LLMConfig) -> 'CognitionGraph':
         # Passing in the actual data with graph stuff as well as workers and llm_config from agent
         nodes = [Node.from_json(node_data) for node_data in data["nodes"]]
         node_map = {node.id: node for node in nodes}
@@ -215,7 +219,7 @@ class Graph:
             )
             edges.append(edge)
 
-        graph = Graph(workers=workers, llm_config=llm_config)
+        graph = CognitionGraph(workers=workers, llm_config=llm_config)
 
         for node in nodes:
             graph.add_node(node)

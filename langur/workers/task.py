@@ -1,5 +1,5 @@
 from typing import ClassVar
-from langur.graph.graph import Graph
+from langur.graph.graph import CognitionGraph
 from langur.graph.node import Node
 from langur.workers.worker import STATE_DONE, STATE_SETUP, Worker
 
@@ -18,8 +18,8 @@ class TaskWorker(Worker):
     # def __init__(self, task: str, node_id: str):
     #     super().__init__(task=task, node_id=node_id)
 
-    async def cycle(self, graph: Graph):
+    async def cycle(self):
         if self.state == STATE_SETUP:
             task_node = TaskNode(id=self.node_id, task=self.task)
-            graph.add_node(task_node)
+            self.cg.add_node(task_node)
             self.state = STATE_DONE

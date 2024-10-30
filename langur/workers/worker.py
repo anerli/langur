@@ -1,18 +1,33 @@
 from abc import ABC
 
 import langur.baml_client as baml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic.fields import FieldInfo
+from pydantic.json_schema import JsonSchemaValue
 
-from typing import TYPE_CHECKING, ClassVar, Dict, Type
+from typing import TYPE_CHECKING, ClassVar, Dict, ForwardRef, Optional, Type, Any
 
 if TYPE_CHECKING:
-    from langur.graph.graph import Graph
+    from langur.graph.graph import CognitionGraph
 
 # Kind of special states
 # default starting state for most workers
 STATE_SETUP = "SETUP"
 # end state for most workers
 STATE_DONE = "DONE"
+
+# GraphRef = ForwardRef('Graph')
+
+class GraphField(FieldInfo):
+    def __init__(self):
+        super().__init__(default=None)
+
+    def _annotation_ext(self) -> Any:
+        return Any
+        
+    def json_schema(self) -> JsonSchemaValue:
+        return {"type": "object"}
+
 
 class Worker(BaseModel, ABC):
     '''
@@ -24,23 +39,44 @@ class Worker(BaseModel, ABC):
     # Workers are often state machines, this state is serialized and retained
     state: str = STATE_SETUP
 
+    # Ref needs to be set after init hence optional
+    #graph: Optional['Graph'] = Field(default=None, exclude=True, annotation_extractor=GraphField)
+
+    # Bypass pydantic sillyness for the graph ref
+    @property
+    def cg(self) -> 'CognitionGraph':
+        if not hasattr(self, "_cognition_graph") or self._cognition_graph is None:
+            raise RuntimeError("Graph reference not set for Worker:", self)
+        return self._cognition_graph
+        
+    @cg.setter
+    def cg(self, value):
+        self._cognition_graph = value
+
+    # Should be set by Worker subclasses
+    _event_prefix: ClassVar[str]
     _subclasses: ClassVar[Dict[str, Type['Worker']]] = {}
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def __init_subclass__(cls, **kwargs):
         """Register subclasses automatically when they're defined"""
         super().__init_subclass__(**kwargs)
         Worker._subclasses[cls.__name__] = cls
 
-    def get_setup_order(self) -> int:
-        '''Lower order = earlier in setup'''
-        # Very simplistic system, likely will need to be redesigned
-        return 0
-    
-    async def setup(self, graph: 'Graph'):
-        '''Runs once when workers are added to nexus'''
+    def emit(self, event: str):
         pass
 
-    async def cycle(self, graph: 'Graph'):
+    # def get_setup_order(self) -> int:
+    #     '''Lower order = earlier in setup'''
+    #     # Very simplistic system, likely will need to be redesigned
+    #     return 0
+    
+    # async def setup(self, graph: 'Graph'):
+    #     '''Runs once when workers are added to nexus'''
+    #     pass
+
+    async def cycle(self):
         '''
         Do one cycle with this worker; the implementation will vary widely depending on the worker's purpose.
         Each cycle should be finite, though potentially cycles could be executed indefinitely.
@@ -68,3 +104,8 @@ class Worker(BaseModel, ABC):
         data_no_worker_type = data.copy()
         del data_no_worker_type["worker_type"]
         return worker_class.model_validate(data_no_worker_type)
+
+# from langur.graph.graph import Graph
+# Worker.model_rebuild()
+# Worker.update_forward_refs(Graph=ForwardRef('Graph'))
+# Worker.model_rebuild()

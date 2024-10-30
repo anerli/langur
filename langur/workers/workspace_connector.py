@@ -7,7 +7,7 @@ from fs.walk import Walker
 
 from langur.baml_client.type_builder import TypeBuilder
 from .worker import STATE_DONE, STATE_SETUP, Worker
-from ..graph.graph import Graph
+from ..graph.graph import CognitionGraph
 from ..graph.node import Node
 from ..actions import ActionDefinitionNode, ActionParameter, ActionNode
 import langur.baml_client as baml
@@ -129,13 +129,13 @@ class WorkspaceConnector(Worker):
     
     
     
-    async def cycle(self, graph: Graph):
+    async def cycle(self):
         if self.state == STATE_SETUP:
             # Create nodes for workspace actions and dynamic workspace overview
             # graph.add_node(
             #     WorkspaceOverviewNode(id="workspace", overview=self.overview())
             # )
-            graph.add_node(
+            self.cg.add_node(
                 WorkspaceOverviewNode(workspace_path=self.workspace_path)
             )
             # graph.add_node(
@@ -167,7 +167,7 @@ class WorkspaceConnector(Worker):
             #         params=[]
             #     )
             # )
-            graph.add_node(FileReadDefinitionNode(workspace_path=self.workspace_path))
-            graph.add_node(FileWriteDefinitionNode(workspace_path=self.workspace_path))
-            graph.add_node(ThinkDefinitionNode(workspace_path=self.workspace_path))
+            self.cg.add_node(FileReadDefinitionNode(workspace_path=self.workspace_path))
+            self.cg.add_node(FileWriteDefinitionNode(workspace_path=self.workspace_path))
+            self.cg.add_node(ThinkDefinitionNode(workspace_path=self.workspace_path))
             self.state = STATE_DONE

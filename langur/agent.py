@@ -11,7 +11,7 @@ from langur.connectors.connector import Connector
 from langur.llm import LLMConfig
 from langur.workers.worker import STATE_DONE, Worker
 #from langur.world import World
-from langur.graph.graph import Graph
+from langur.graph.graph import CognitionGraph
 
 
 
@@ -20,7 +20,7 @@ class Agent:
     Lower level agent representation.
     Use Langur instead for high level usage.
     '''
-    def __init__(self, workers: list[Worker], llm_config: LLMConfig = None, graph: Graph = None):
+    def __init__(self, workers: list[Worker], llm_config: LLMConfig = None, cg: CognitionGraph = None):
         # TODO jank ctor, should have a clear one (high lvl) and ugly one separate - maybe agent builder or something idk
         # TODO: eventually make so one agent can do various goals thus re-using brain state pathways etc cleverly
         # self.cr.add_llm_client(name='mini', provider='openai', options={
@@ -44,7 +44,7 @@ class Agent:
         
         #self.world = World()
         #self.goal = goal
-        self.graph = graph if graph else Graph(workers=workers, llm_config=self.llm_config)
+        self.cg = cg if cg else CognitionGraph(workers=workers, llm_config=self.llm_config)
         self.workers = workers
 
         
@@ -86,10 +86,10 @@ class Agent:
         
         # could be helpful info to load/save cycle count instead of resetting if we loaded a prev agent, idk
         cycle_count = 0
-        while not self.graph.are_workers_done():
+        while not self.cg.are_workers_done():
             # a lil jank calling the graph thing here
             # would be cool to live update num done workers mid-cycle based on state changes - if workers were to use some hook to update state
-            print(f"[Cycle {cycle_count+1}]: {len(self.graph.get_workers_with_state(STATE_DONE))}/{len(self.workers)} workers done")
+            print(f"[Cycle {cycle_count+1}]: {len(self.cg.get_workers_with_state(STATE_DONE))}/{len(self.workers)} workers done")
             await self.cycle()
             cycle_count += 1
         print("Agent done!")
@@ -99,7 +99,7 @@ class Agent:
         #for _ in range(cycles):
         jobs = []
         for worker in self.workers:
-            jobs.append(worker.cycle(self.graph))
+            jobs.append(worker.cycle())
         # naive async implementation, don't need to necessarily block gather here
         await asyncio.gather(*jobs)
     
@@ -107,7 +107,7 @@ class Agent:
         return {
             "llm": self.llm_config.model_dump(mode="json"),
             "workers": [worker.to_json() for worker in self.workers],
-            "graph": self.graph.to_json()
+            "graph": self.cg.to_json()
         }
 
     @classmethod
@@ -118,7 +118,7 @@ class Agent:
         # )
         workers = [Worker.from_json(worker_data) for worker_data in data["workers"]]
         llm_config = LLMConfig.model_validate(data["llm"])
-        graph = Graph.from_json(
+        graph = CognitionGraph.from_json(
             data=data["graph"],
             workers=workers,
             llm_config=llm_config
@@ -127,7 +127,7 @@ class Agent:
             workers=workers,
             #goal=goal,
             llm_config=llm_config,#data["llm"],
-            graph=graph
+            cg=graph
         )
         return agent
 
