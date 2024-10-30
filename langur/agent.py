@@ -9,7 +9,6 @@ from baml_py import ClientRegistry
 from pydantic import BaseModel
 from langur.connectors.connector import Connector
 from langur.llm import LLMConfig
-from langur.state_tracker import StateTracker
 from langur.workers.worker import STATE_DONE, Worker
 #from langur.world import World
 from langur.graph.graph import CognitionGraph
@@ -21,18 +20,7 @@ class Agent:
     Lower level agent representation.
     Use Langur instead for high level usage.
     '''
-    def __init__(self, workers: list[Worker], llm_config: LLMConfig = None, cg: CognitionGraph = None, events: set[str] = None):
-        # self.cr.add_llm_client(name='mini', provider='openai', options={
-        #     "model": "gpt-4o-mini",
-        #     "temperature": 0.0,
-        #     "api_key": os.environ.get('OPENAI_API_KEY')
-        # })
-        # self.cr.add_llm_client(name='sonnet', provider='anthropic', options={
-        #     "model": "gpt-4o-mini",
-        #     "temperature": 0.0,
-        #     "api_key": os.environ.get('OPENAI_API_KEY')
-        # })
-
+    def __init__(self, workers: list[Worker], llm_config: LLMConfig = None, cg: CognitionGraph = None):
         self.llm_config = llm_config if llm_config else LLMConfig(
             provider="anthropic",
             options={
@@ -45,11 +33,6 @@ class Agent:
         #self.goal = goal
         self.cg = cg if cg else CognitionGraph(workers=workers, llm_config=self.llm_config)
         self.workers = workers
-
-        self.events = events if events else set()
-
-        
-
         
     
     def use(self, *connectors: Connector):
@@ -57,33 +40,6 @@ class Agent:
             self.world.register_connector(connector)
         return self
 
-    # async def add_workers(self, *workers: Worker):
-    #     # setup param is maybe hacky
-    #     #if setup:
-    #     workers_by_setup_order = {}
-    #     for worker in workers:
-    #         setup_order = worker.get_setup_order()
-    #         if setup_order not in workers_by_setup_order:
-    #             workers_by_setup_order[setup_order] = []
-    #         workers_by_setup_order[setup_order].append(worker)
-        
-    #     ordered_worker_groups = []
-    #     sorted_setup_orders = sorted(workers_by_setup_order.keys())
-    #     for setup_order in sorted_setup_orders:
-    #         ordered_worker_groups.append(workers_by_setup_order[setup_order])
-        
-    #     for worker_group in ordered_worker_groups:
-    #         # Call setup for each worker
-    #         jobs = []
-    #         for worker in worker_group:
-    #             jobs.append(worker.setup(self.graph))
-    #         await asyncio.gather(*jobs)
-
-    #     self.workers.extend(workers)
-    
-    # def add_workers_nosetup(self, *workers: Worker):
-    #     # JANK
-    #     self.workers.extend(workers)
 
     async def run_until_done(self):
         
@@ -106,46 +62,26 @@ class Agent:
         # naive async implementation, don't need to necessarily block gather here
         await asyncio.gather(*jobs)
 
-        #states = []
-        state_tracker = StateTracker()
-        # Event updates
-        for worker in self.workers:
-            # For now using class name as event worker type identifier
-            state_tracker.update(worker.__class__.__name__, worker.state)
-            #states.append(worker.state)
-
-        # janky assigning to both, unifying agent/cg classes and factoring out actual graph should help
-        self.events = state_tracker.generate_events()
-        self.cg.events = self.events
-
     def to_json(self) -> dict:
         return {
             "llm": self.llm_config.model_dump(mode="json"),
             "workers": [worker.to_json() for worker in self.workers],
-            "events": self.events,
             "graph": self.cg.to_json(),
         }
 
     @classmethod
     def from_json(cls, data: dict) -> 'Agent':
-        # problem - worker setups should not retrigger
-        # return Langur(
-
-        # )
         workers = [Worker.from_json(worker_data) for worker_data in data["workers"]]
         llm_config = LLMConfig.model_validate(data["llm"])
         graph = CognitionGraph.from_json(
             data=data["graph"],
             workers=workers,
             llm_config=llm_config,
-            events=data["events"]
         )
         agent = Agent(
             workers=workers,
-            #goal=goal,
             llm_config=llm_config,#data["llm"],
             cg=graph,
-            events=data["events"]
         )
         return agent
 

@@ -23,14 +23,11 @@ N = TypeVar('N', bound='Node')#, Node)
 # TODO: Combine with low-level Agent and factor out actual graph component
 
 class CognitionGraph:
-    def __init__(self, workers: list['Worker'], llm_config: LLMConfig, events: set[str] = None):#cr: ClientRegistry):
+    def __init__(self, workers: list['Worker'], llm_config: LLMConfig):#cr: ClientRegistry):
         self._node_map: dict[str, Node] = {}
         self.edges: set[Edge] = set()
         
         self.workers = workers
-
-        # Any events from last cycle that workers should be aware of
-        self.events = events if events else set()
 
         # Give graph ref to workers
         for worker in workers:
@@ -41,26 +38,13 @@ class CognitionGraph:
         self.llm_config = llm_config
 
         self._type_index: TypeIndex[Node] = TypeIndex()
-    
-    def event_occured(self, event: str):
-        return event in self.events
-    
+
     def get_client_registry(self) -> ClientRegistry:
         return self.llm_config.to_registry()
 
-    # def get_workers_with_state(self, state: str) -> list['Worker']:
-    #     # could make more efficient by having workers callback on state change and keeping a map from state to workers
-    #     return list(filter(lambda worker: worker.state == state, self.workers))
-
-    # def get_workers_with_state(self, state: str) -> list['Worker']:
-    #     # could make more efficient by having workers callback on state change and keeping a map from state to workers
-    #     return list(filter(lambda worker: worker.state == state, self.workers))
-
-    
-
     def worker_count(self, worker_type: str | Type['Worker'] = None, state: str = None):
         '''
-        Ugly impl, basically used for workers to help decide when other works are done doing whatever
+        A bit ugly impl, basically used for workers to help decide when other works are done doing whatever
         '''
         if worker_type is None and state is None:
             return len(self.workers)
@@ -72,16 +56,6 @@ class CognitionGraph:
             return len(list(filter(lambda worker: worker.__class__.__name__ == worker_type, self.workers)))
         else:
             return len(list(filter(lambda worker: worker.__class__.__name__ == worker_type and worker.state == state, self.workers)))
-
-    # def worker_state_count(self, worker_type: str | Type[Worker], state: str):
-    #     if not isinstance(worker_type, str):
-    #         worker_type = worker_type.__name__
-    #     return len(list(filter(lambda worker: worker.__class__.__name__ == worker_type and worker.state == state, self.workers)))
-    
-    # def worker_count(self, worker_type: str | Type[Worker]):
-    #     if not isinstance(worker_type, str):
-    #         worker_type = worker_type.__name__
-    #     return len(list(filter(lambda worker: worker.__class__.__name__ == worker_type, self.workers)))
 
     def are_workers_done(self):
         return self.worker_count(state=STATE_DONE) == self.worker_count()
@@ -151,16 +125,6 @@ class CognitionGraph:
                     matches.add(node)
                     break
         return matches
-    
-    # Not sure if I prefer this approach or tags
-    # It is probably preferable to return subclasses as well..
-    # def query_nodes_by_type(self, node_type: Type[N]) -> set[N]:
-    #     # NOTE: Matches by class name, does NOT match subclasses
-    #     matches = set()
-    #     for node in self.get_nodes():
-    #         if node.__class__.__name__ == node_type.__name__:
-    #             matches.add(node)
-    #     return matches
 
     def query_nodes_by_type(self, node_type: Type[N]) -> Set[N]:
         """Query nodes by type, including subclass instances"""
