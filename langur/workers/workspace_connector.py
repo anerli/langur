@@ -1,3 +1,4 @@
+from abc import abstractmethod
 import asyncio
 import os
 from fs.base import FS
@@ -9,10 +10,10 @@ from langur.baml_client.type_builder import TypeBuilder
 from .worker import STATE_DONE, STATE_SETUP, Worker
 from ..graph.graph import CognitionGraph
 from ..graph.node import Node
-from ..actions import ActionDefinitionNode, ActionParameter, ActionNode
+from ..actions import ActionNode
 import langur.baml_client as baml
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 
 # class WorkspaceOverviewNode(Node):
@@ -60,56 +61,73 @@ class WorkspaceOverviewNode(WorkspaceNode):
         s += "\n".join(file_list)
         return s
 
-class FileReadDefinitionNode(WorkspaceNode, ActionDefinitionNode):
-    id: str = "FILE_READ"
-    description: str = "Read a single file's contents."
-    params: list[str] = ["file_path"]
+# class FileReadDefinitionNode(WorkspaceNode, ActionDefinitionNode):
+#     id: str = "FILE_READ"
+#     description: str = "Read a single file's contents."
+#     params: list[str] = ["file_path"]
 
-    # todo: derive params from func signature
-    # def execute(self, file_path: str) -> str:
-    #     with self.get_fs().open(file_path, "r") as f:
-    #         return f.read()
+#     # This is NOT the high level API, so it doesn't have to be super pretty - will have an adapter
+#     async def execute(self, params, context) -> str:
+#         with self.get_fs().open(params["file_path"], "r") as f:
+#             content = f.read()
+#         return f"I read {params['file_path']}, it contains:\n```\n{content}\n```"
 
-    # This is NOT the high level API, so it doesn't have to be super pretty - will have an adapter
-    async def execute(self, params, context) -> str:
-        with self.get_fs().open(params["file_path"], "r") as f:
-            content = f.read()
-        return f"I read {params['file_path']}, it contains:\n```\n{content}\n```"
+# class FileWriteDefinitionNode(WorkspaceNode, ActionDefinitionNode):
+#     id: str = "FILE_WRITE"
+#     description: str = "Overwrite a file's contents."
+#     #description="Read and subsequently overwrite a file's contents."
+#     params: list[str] = ["file_path", "new_content"]
 
-class FileWriteDefinitionNode(WorkspaceNode, ActionDefinitionNode):
-    id: str = "FILE_WRITE"
-    description: str = "Overwrite a file's contents."
-    #description="Read and subsequently overwrite a file's contents."
-    params: list[str] = ["file_path", "new_content"]
-
-    # todo: derive params from func signature
-    # def execute(self, file_path: str, new_content: str) -> str:
-    #     with self.get_fs().open(file_path, "w") as f:
-    #         f.write(new_content)
-    #     return new_content
-
-    # def extra_context(self) -> str
     
-    async def execute(self, params, context) -> str:
-        with self.get_fs().open(params["file_path"], "w") as f:
-            f.write(params["new_content"])
-        #return params["new_content"]
-        return f"I overwrote {params['file_path']}, it now contains:\n```\n{params['new_content']}\n```"
+    # async def execute(self, params, context) -> str:
+    #     with self.get_fs().open(params["file_path"], "w") as f:
+    #         f.write(params["new_content"])
+    #     #return params["new_content"]
+    #     return f"I overwrote {params['file_path']}, it now contains:\n```\n{params['new_content']}\n```"
 
-class ThinkDefinitionNode(ActionDefinitionNode):
-    id: str = "THINK"
-    description: str = "Do purely cognitive processing."
-    params: list[str] = []
+# class ThinkDefinitionNode(ActionDefinitionNode):
+#     id: str = "THINK"
+#     description: str = "Do purely cognitive processing."
+#     params: list[str] = []
 
-    # TOdo: uhh how do we get context in here?
-    # prev pattern we had like world, memory
-    # special context parameter?? or property? idkkkkkk
-    async def execute(self, params, context) -> str:
-        # TODO: Not using the graph's client registry here so this uses fallback llm, which means its not properly configurable
-        return await baml.b.Think(context=context, description=self.description)
-        #return ""
+#     async def execute(self, params, context) -> str:
+#         # TODO: Not using the graph's client registry here so this uses fallback llm, which means its not properly configurable
+#         return await baml.b.Think(context=context, description=self.description)
 
-class WorkspaceConnector(Worker):
+
+
+class FileReadNode(ActionNode):#WorkspaceNode,
+    definition: ClassVar[str] = "Read a single file's contents."
+    input_schema: ClassVar[list[str]] = ["file_path"]
+
+    async def execute(self, conn: 'WorkspaceConnector', context: str) -> str:
+        # TODO: howto get workspace methods/path here?
+        with conn.get_fs().open(self.inputs["file_path"], "r") as f:
+            content = f.read()
+        return f"I read {self.inputs['file_path']}, it contains:\n```\n{content}\n```"
+
+class FileWriteNode(ActionNode):#WorkspaceNode,
+    definition: ClassVar[str] = "Overwrite a single file's contents."
+    input_schema: ClassVar[list[str]] = ["file_path", "new_content"]
+
+    async def execute(self, conn: 'WorkspaceConnector', context: str) -> str:
+        with conn.get_fs().open(self.inputs["file_path"], "w") as f:
+            f.write(self.inputs["new_content"])
+        return f"I overwrote {self.inputs['file_path']}, it now contains:\n```\n{self.inputs['new_content']}\n```"
+
+class ThinkNode(ActionNode):#WorkspaceNode,
+    definition: ClassVar[str] = "Do purely cognitive processing."
+    input_schema: ClassVar[list[str]] = []
+
+    async def execute(self, conn: 'WorkspaceConnector', context: str) -> str:
+        return await baml.b.Think(context=context, description=self.purpose)
+
+
+class ConnectorWorker(Worker):
+    @abstractmethod
+    def get_action_node_types(self) -> list[ActionNode]: ...
+
+class WorkspaceConnector(ConnectorWorker):
     '''Manages cognitive relations between the nexus and filesystem actions'''
     workspace_path: str
 
@@ -127,7 +145,8 @@ class WorkspaceConnector(Worker):
     def get_fs(self):
         return OSFS(self.workspace_path)
     
-    
+    def get_action_node_types(self) -> list[ActionNode]:
+        return [FileReadNode, FileWriteNode, ThinkNode]
     
     async def cycle(self):
         if self.state == STATE_SETUP:
@@ -138,36 +157,7 @@ class WorkspaceConnector(Worker):
             self.cg.add_node(
                 WorkspaceOverviewNode(workspace_path=self.workspace_path)
             )
-            # graph.add_node(
-            #     ActionDefinitionNode(
-            #         id="FILE_READ",
-            #         description="Read a single file's contents.",
-            #         #schema={"file_path": tb.string()}
-            #         #params=[ActionParameter("file_path", tb.string())]
-            #         params=["file_path"]
-            #     )
-            # ),
-            # graph.add_node(
-            #     ActionDefinitionNode(
-            #         id="FILE_WRITE",
-            #         description="Read and subsequently overwrite a file's contents.",
-            #         #schema={"file_path": tb.string(), "new_content": tb.string()}
-            #         params=[
-            #             #ActionParameter("file_path", tb.string()),
-            #             #ActionParameter("new_content", tb.string(), "Content to replace existing")
-            #             "file_path", "new_content"
-            #         ]
-            #     )
-            # )
-            # graph.add_node(
-            #     ActionDefinitionNode(
-            #         id="THINK",
-            #         description="Do purely cognitive processing.",
-            #         #schema={}
-            #         params=[]
-            #     )
-            # )
-            self.cg.add_node(FileReadDefinitionNode(workspace_path=self.workspace_path))
-            self.cg.add_node(FileWriteDefinitionNode(workspace_path=self.workspace_path))
-            self.cg.add_node(ThinkDefinitionNode(workspace_path=self.workspace_path))
+            #self.cg.add_node(FileReadDefinitionNode(workspace_path=self.workspace_path))
+            #self.cg.add_node(FileWriteDefinitionNode(workspace_path=self.workspace_path))
+            #self.cg.add_node(ThinkDefinitionNode(workspace_path=self.workspace_path))
             self.state = STATE_DONE

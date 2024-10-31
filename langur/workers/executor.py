@@ -1,5 +1,5 @@
 import asyncio
-from langur.actions import ActionNode, ActionDefinitionNode
+from langur.actions import ActionNode
 from langur.baml_client.type_builder import TypeBuilder
 from langur.graph.graph import CognitionGraph
 from langur.graph.node import Node
@@ -38,8 +38,8 @@ class ExecutorWorker(Worker):
         
         return frontier
 
-    async def fill_params(self, action_node: ActionNode, action_definition_node: ActionDefinitionNode, context: str):
-        empty_params = [k for k, v in action_node.params.items() if v is None]
+    async def fill_params(self, action_node: ActionNode, context: str):
+        empty_params = [k for k, v in action_node.inputs.items() if v is None]
 
         if len(empty_params) == 0:
             return
@@ -53,10 +53,10 @@ class ExecutorWorker(Worker):
 
         params = await baml.b.FillParams(
             context=context,
-            action_desc=action_node.description,
+            action_desc=action_node.purpose,
             # TODO: actually use jinja features instead of this sillyness
-            filled_inputs="\n".join([f"{k}={v}" for k, v in action_node.params.items() if v is not None]),
-            needed_inputs="\n".join([f"{k}" for k, v in action_node.params.items() if v is None]),
+            filled_inputs="\n".join([f"{k}={v}" for k, v in action_node.inputs.items() if v is not None]),
+            needed_inputs="\n".join([f"{k}" for k, v in action_node.inputs.items() if v is None]),
             baml_options={
                 "tb": tb,
                 "client_registry": self.cg.get_client_registry()
@@ -64,7 +64,7 @@ class ExecutorWorker(Worker):
         )
         # Fill in node's params
         for k, v in params.model_dump().items():
-            action_node.params[k] = v
+            action_node.inputs[k] = v
 
     def build_context(self, action_node: ActionNode) -> list[str]:
         # Procedure: Get all upstream completed actions, append all outputs together
@@ -82,21 +82,22 @@ class ExecutorWorker(Worker):
 
     async def execute_node(self, action_node: ActionNode) -> str:
         # Find corresponding definition node
-        action_definition_nodes = list(filter(lambda node: "action_definition" in node.get_tags(), action_node.upstream_nodes()))
-        if len(action_definition_nodes) != 1:
-            raise RuntimeError("Found none or multiple corresponding definitions for action node:", action_node)
-        action_definition_node: ActionDefinitionNode = action_definition_nodes[0]
+        # action_definition_nodes = list(filter(lambda node: "action_definition" in node.get_tags(), action_node.upstream_nodes()))
+        # if len(action_definition_nodes) != 1:
+        #     raise RuntimeError("Found none or multiple corresponding definitions for action node:", action_node)
+        # action_definition_node: ActionDefinitionNode = action_definition_nodes[0]
 
         # Build context
         context = "\n\n".join(self.build_context(action_node))
 
         # If missing params, need to dynamically fill
-        await self.fill_params(action_node, action_definition_node, context)
+        await self.fill_params(action_node, context)
 
         #print("Context:", context)
 
-        output = await action_definition_node.execute(
-            params=action_node.params,
+        output = await action_node.execute(
+            #params=action_node.params,
+            conn=self.cg.query_worker_by_id(action_node.connector_id),
             context=context
         )
         action_node.output = output

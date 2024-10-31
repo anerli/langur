@@ -1,10 +1,13 @@
-from langur.actions import ActionDefinitionNode, ActionNode
+from langur.actions import ActionNode
+from langur.baml_client.types import ActionNode as BAMLActionNode
 from langur.baml_client.type_builder import TypeBuilder
 from langur.graph.graph import CognitionGraph
 from langur.workers.worker import STATE_DONE, STATE_SETUP, Worker
 import langur.baml_client as baml
 
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Type
+
+from langur.workers.workspace_connector import ConnectorWorker
 
 if TYPE_CHECKING:
     from .task import TaskNode
@@ -13,7 +16,6 @@ class PlannerWorker(Worker):
     task_node_id: str
 
     state: str = "WAITING"
-    _event_prefix: ClassVar[str] = "planner"
 
     async def cycle(self):
         # a bit hacky idk
@@ -23,20 +25,52 @@ class PlannerWorker(Worker):
             await self.plan_task()
             self.state = STATE_DONE
 
+    def derive_connector(self, node_data: BAMLActionNode) -> ConnectorWorker:
+        '''
+        Derive the connector that is associated with the given generated action node.
+        TODO: Will eventually need a method for differentiating connectors which have the sames types of actions available
+        For example:
+        READ ./workspace1/foo/bar -> goes to Connector1
+        READ ./workspace2/foo/baz -> goes to Connector2
+
+        For now, multiple connectors of the same type are not allowed.
+        '''
+        connector_workers = self.cg.query_workers(ConnectorWorker)
+        #action_node_types: dict[str, Type[ActionNode]] = {}
+        connector = None
+        for worker in connector_workers:
+            #action_node_types = set()
+            for action_node_type in worker.get_action_node_types():
+                #action_node_types
+                if node_data.action_input["type"] == action_node_type.action_type_name():
+                    if connector:
+                        # Found anothing matching connector (or more specifically matching action type in another connector), not supported yet
+                        raise RuntimeError("Unable to derive connector for action (multiple connectors of the same type are not yet supported!)")
+                    connector = worker
+                    break
+                #action_node_types[action_node_type.action_type_name()] = action_node_type
+        return connector
+
     async def plan_task(self):
-        graph = self.cg
-        action_def_nodes: list[ActionDefinitionNode] = graph.query_nodes_by_tag("action_definition")
+        #action_def_nodes: list[ActionDefinitionNode] = self.cg.query_nodes_by_tag("action_definition")
+        connector_workers = self.cg.query_workers(ConnectorWorker)
+        action_node_types: dict[str, Type[ActionNode]] = {}
+        for worker in connector_workers:
+            for action_node_type in worker.get_action_node_types():
+                action_node_types[action_node_type.action_type_name()] = action_node_type
+            #action_node_types.extend(worker.get_action_node_types())
     
         tb = TypeBuilder()
-        action_input_types = []
+        action_input_schemas = []
         # Dynamically build action input types
-        for action_def_node in action_def_nodes:
-            action_def_name = action_def_node.id
+        for action_type_name, action_node_type in action_node_types.items():
+            #action_def_name = action_def_node.id
+            #action_type_name = action_node_type.action_type_name()
 
-            builder = tb.add_class(action_def_name)
-            builder.add_property("type", tb.literal_string(action_def_name))
+            builder = tb.add_class(action_type_name)
+            builder.add_property("type", tb.literal_string(action_type_name))
             
-            params = action_def_node.params
+            params = action_node_type.input_schema
 
             for param in params:
                 # use field type from action def but make optional (any problems if double applied?)
@@ -45,18 +79,18 @@ class PlannerWorker(Worker):
                 # if param.description:
                 #     property_builder.description(param.description)
                 builder.add_property(param, tb.string().optional())
-            action_input_types.append(builder.type())
+            action_input_schemas.append(builder.type())
 
-        tb.ActionNode.add_property("action_input", tb.union(action_input_types)).description("Provide inputs if known else null. Do not hallicinate values.")
+        tb.ActionNode.add_property("action_input", tb.union(action_input_schemas)).description("Provide inputs if known else null. Do not hallicinate values.")
 
-        task_node: 'TaskNode' = graph.query_node_by_id(self.task_node_id)
+        task_node: 'TaskNode' = self.cg.query_node_by_id(self.task_node_id)
         resp = await baml.b.PlanActions(
             goal=task_node.task,
-            observables="\n".join([node.content() for node in graph.query_nodes_by_tag("observable")]),
-            action_types="\n".join([f"- {node.id}: {node.description}" for node in action_def_nodes]),
+            observables="\n".join([node.content() for node in self.cg.query_nodes_by_tag("observable")]),
+            action_types="\n".join([f"- {action_type_name}: {action_node_type.definition}" for action_type_name, action_node_type in action_node_types.items()]),
             baml_options={
                 "tb": tb,
-                "client_registry": graph.get_client_registry()
+                "client_registry": self.cg.get_client_registry()
             }
         )
         
@@ -64,24 +98,28 @@ class PlannerWorker(Worker):
         # Build action use nodes
         nodes = []
         for node_data in resp.nodes:
+            print("action_node_types:", action_node_types)
+            print("node_data:", node_data)
+            action_node_type = action_node_types[node_data.action_input["type"]]
             #nodes.append(ActionUseNode(item.id, item.action_input))
-            node = ActionNode(
+            node = action_node_type(
                 id=node_data.id,
-                params=node_data.action_input,
-                description=node_data.description
+                inputs=node_data.action_input,
+                purpose=node_data.description,
+                connector_id=self.derive_connector(node_data).id
             )
             nodes.append(node)
-            graph.add_node(
+            self.cg.add_node(
                 node
             )
-            graph.add_edge_by_ids(
-                src_id=node_data.action_input["type"],
-                dest_id=node.id,
-                relation="defines"
-            )
+            # self.cg.add_edge_by_ids(
+            #     src_id=node_data.action_input["type"],
+            #     dest_id=node.id,
+            #     relation="defines"
+            # )
         
         for edge_data in resp.edges:
-            graph.add_edge_by_ids(
+            self.cg.add_edge_by_ids(
                 src_id=edge_data.from_id,
                 dest_id=edge_data.to_id,
                 relation="dependency"
@@ -90,7 +128,7 @@ class PlannerWorker(Worker):
         # Connect leaves to task
         for node in nodes:
             if len(node.outgoing_edges()) == 0:
-                graph.add_edge_by_ids(
+                self.cg.add_edge_by_ids(
                     src_id=node.id,
                     dest_id=self.task_node_id,
                     relation="achieves"

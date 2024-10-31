@@ -19,43 +19,59 @@ class NodeCollisionError(RuntimeError):
     pass
 
 N = TypeVar('N', bound='Node')#, Node)
+W = TypeVar('W', bound='Worker')
 
 # TODO: Combine with low-level Agent and factor out actual graph component
 
 class CognitionGraph:
     def __init__(self, workers: list['Worker'], llm_config: LLMConfig):#cr: ClientRegistry):
         self._node_map: dict[str, Node] = {}
+        self._node_type_index: TypeIndex[Node] = TypeIndex()
         self.edges: set[Edge] = set()
-        
-        self.workers = workers
 
-        # Give graph ref to workers
+        self._worker_map: dict[str, 'Worker'] = {}
+        self._worker_type_index: TypeIndex['Worker'] = TypeIndex()
+        
+        #self._workers = []
         for worker in workers:
-            worker.cg = self
+            self.add_worker(worker)
+        # self.workers = workers
+        # # Give graph ref to workers
+        # for worker in workers:
+        #     worker.cg = self
 
         #self.cr = cr
         print("llm_config", llm_config)
         self.llm_config = llm_config
 
-        self._type_index: TypeIndex[Node] = TypeIndex()
+        
 
     def get_client_registry(self) -> ClientRegistry:
         return self.llm_config.to_registry()
+
+    def add_worker(self, worker: 'Worker'):
+        worker.cg = self
+        self._worker_map[worker.id] = worker
+        self._worker_type_index.add(worker)
+        #self._workers.append(worker)
+    
+    def get_workers(self):
+        return self._worker_type_index.get_all()
 
     def worker_count(self, worker_type: str | Type['Worker'] = None, state: str = None):
         '''
         A bit ugly impl, basically used for workers to help decide when other works are done doing whatever
         '''
         if worker_type is None and state is None:
-            return len(self.workers)
+            return len(self.get_workers())
         if worker_type is None:
-            return len(list(filter(lambda worker: worker.state == state, self.workers)))
+            return len(list(filter(lambda worker: worker.state == state, self.get_workers())))
         if not isinstance(worker_type, str):
             worker_type = worker_type.__name__
         if state is None:
-            return len(list(filter(lambda worker: worker.__class__.__name__ == worker_type, self.workers)))
+            return len(list(filter(lambda worker: worker.__class__.__name__ == worker_type, self.get_workers())))
         else:
-            return len(list(filter(lambda worker: worker.__class__.__name__ == worker_type and worker.state == state, self.workers)))
+            return len(list(filter(lambda worker: worker.__class__.__name__ == worker_type and worker.state == state, self.get_workers())))
 
     def are_workers_done(self):
         return self.worker_count(state=STATE_DONE) == self.worker_count()
@@ -71,7 +87,7 @@ class CognitionGraph:
         if node.id in self._node_map:
             raise NodeCollisionError("Node ID collision when adding node:", node)
         self._node_map[node.id] = node
-        self._type_index.add(node)
+        self._node_type_index.add(node)
         #self.nodes.add(node)
     
     def has_node(self, node: Node) -> bool:
@@ -128,7 +144,15 @@ class CognitionGraph:
 
     def query_nodes_by_type(self, node_type: Type[N]) -> Set[N]:
         """Query nodes by type, including subclass instances"""
-        return self._type_index.get_by_type(node_type)
+        return self._node_type_index.get_by_type(node_type)
+
+    # TODO: make so can query by type directly or by class name
+    def query_workers(self, worker_type: Type[W]) -> Set[W]:
+        """Query workers by type, including subclass instances"""
+        return self._worker_type_index.get_by_type(worker_type)
+
+    def query_worker_by_id(self, worker_id: str):
+        return self._worker_map[worker_id]
 
     def remove_edge(self, edge: Edge):
         edge.src_node.edges.remove(edge)
@@ -140,7 +164,7 @@ class CognitionGraph:
         for edge in edges:
             self.remove_edge(edge)
         del self._node_map[node.id]
-        self._type_index.remove(node)
+        self._node_type_index.remove(node)
 
     def substitute(self, node_id: str, replacements: list[Node], keep_incoming=True, keep_outgoing=True):#, ignore_dupe_ids=False):
         '''Replace a node by swapping it out for one or more nodes, which will each assume all incoming and outgoing edges of the replaced node'''

@@ -1,6 +1,7 @@
 from abc import ABC
 
 import langur.baml_client as baml
+from cuid2 import Cuid
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
@@ -18,6 +19,8 @@ STATE_DONE = "DONE"
 
 # GraphRef = ForwardRef('Graph')
 
+CUID = Cuid(length=10)
+
 class GraphField(FieldInfo):
     def __init__(self):
         super().__init__(default=None)
@@ -27,7 +30,6 @@ class GraphField(FieldInfo):
         
     def json_schema(self) -> JsonSchemaValue:
         return {"type": "object"}
-
 
 class Worker(BaseModel, ABC):
     '''
@@ -41,6 +43,7 @@ class Worker(BaseModel, ABC):
     #state: str = Field(default=STATE_SETUP)
 
     #_state: str = PrivateAttr(default=STATE_SETUP)  # Private storage
+    id: str = Field(default_factory=CUID.generate)
     state: str = Field(default=STATE_SETUP)  # Public field
 
     # def __init__(self, **data):
@@ -99,6 +102,9 @@ class Worker(BaseModel, ABC):
         """Register subclasses automatically when they're defined"""
         super().__init_subclass__(**kwargs)
         Worker._subclasses[cls.__name__] = cls
+    
+    def __hash__(self):
+        return hash((self.__class__.__name__, id(self)))
 
     # def emit(self, event: str):
     #     self.cg.emit(f"{self._event_prefix}.{event}")
