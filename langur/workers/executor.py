@@ -1,5 +1,5 @@
 import asyncio
-from langur.actions import ActionNode
+from langur.actions import ActionContext, ActionNode
 from langur.baml_client.type_builder import TypeBuilder
 from langur.graph.graph import CognitionGraph
 from langur.graph.node import Node
@@ -80,19 +80,22 @@ class ExecutorWorker(Worker):
             context = [*self.build_context_rec(node), *context]
         return context
 
-    def build_context(self, action_node: ActionNode) -> str:
+    def build_context(self, action_node: ActionNode, action_ctx: ActionContext) -> str:
+        '''
+        Build context for action node and put in action ctx.
+        '''
         context = "\n\n".join(self.build_context_rec(action_node))
 
         # Potentially, extra could be in the rec procedure - if we wanted to grab the extra context for upstream nodes too
         extra = action_node.extra_context(
-            conn=self.cg.query_worker_by_id(action_node.connector_id),
-            context=context
+            action_ctx
         )
 
         if extra is not None:
             context += f"\n\n{extra}"
-
-        return context
+        
+        action_ctx.ctx = context
+        #return context
 
     async def execute_node(self, action_node: ActionNode) -> str:
         # Find corresponding definition node
@@ -101,18 +104,22 @@ class ExecutorWorker(Worker):
         #     raise RuntimeError("Found none or multiple corresponding definitions for action node:", action_node)
         # action_definition_node: ActionDefinitionNode = action_definition_nodes[0]
 
+        action_ctx = ActionContext(
+            cg=self.cg,
+            conn=self.cg.query_worker_by_id(action_node.connector_id),
+            ctx=""
+        )
+
         # Build context
-        context = self.build_context(action_node)
+        self.build_context(action_node, action_ctx)
 
         # If missing params, need to dynamically fill
-        await self.fill_params(action_node, context)
+        await self.fill_params(action_node, action_ctx.ctx)
 
         #print("Context:", context)
 
         output = await action_node.execute(
-            #params=action_node.params,
-            conn=self.cg.query_worker_by_id(action_node.connector_id),
-            context=context
+            action_ctx
         )
         # Make sure not to put in None, else it will count as un-executed and run infinitely
         action_node.output = output if output else ""

@@ -99,12 +99,18 @@ class Connector:
     def action(self, fn: Callable[[Any], Any]):
         schema = schema_from_function(fn)
 
-        #print(fields_dict)
+        print(schema.json_schema)
         print(schema.fields_dict)
 
         # TODO: Pass ctx to fn if param ctx: ActionContext found in fn def
-        async def execute(self, ctx: ActionContext):#conn, context):
-            return fn(**self.inputs)
+
+        if "ctx" in schema.fields_dict and "ctx" not in schema.json_schema["properties"]:
+            # This means the fn specifies ctx: ActionContext
+            async def execute(self, ctx: ActionContext):
+                return fn(ctx=ctx, **self.inputs)
+        else:
+            async def execute(self, ctx: ActionContext):
+                return fn(**self.inputs)
 
         action_node_subtype = create_dynamic_model(
             schema.name,
