@@ -66,7 +66,7 @@ class ExecutorWorker(Worker):
         for k, v in params.model_dump().items():
             action_node.inputs[k] = v
 
-    def build_context(self, action_node: ActionNode) -> list[str]:
+    def build_context_rec(self, action_node: ActionNode) -> list[str]:
         # Procedure: Get all upstream completed actions, append all outputs together
         upstream: list[ActionNode] = list(filter(lambda node: "action" in node.get_tags(), action_node.upstream_nodes()))
         context = []
@@ -77,7 +77,21 @@ class ExecutorWorker(Worker):
             context.append(node.output)
         for node in upstream:
             #context.extend()
-            context = [*self.build_context(node), *context]
+            context = [*self.build_context_rec(node), *context]
+        return context
+
+    def build_context(self, action_node: ActionNode) -> str:
+        context = "\n\n".join(self.build_context_rec(action_node))
+
+        # Potentially, extra could be in the rec procedure - if we wanted to grab the extra context for upstream nodes too
+        extra = action_node.extra_context(
+            conn=self.cg.query_worker_by_id(action_node.connector_id),
+            context=context
+        )
+
+        if extra is not None:
+            context += f"\n\n{extra}"
+
         return context
 
     async def execute_node(self, action_node: ActionNode) -> str:
@@ -88,7 +102,7 @@ class ExecutorWorker(Worker):
         # action_definition_node: ActionDefinitionNode = action_definition_nodes[0]
 
         # Build context
-        context = "\n\n".join(self.build_context(action_node))
+        context = self.build_context(action_node)
 
         # If missing params, need to dynamically fill
         await self.fill_params(action_node, context)

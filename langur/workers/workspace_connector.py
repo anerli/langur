@@ -110,6 +110,12 @@ class FileWriteNode(ActionNode):#WorkspaceNode,
     definition: ClassVar[str] = "Overwrite a single file's contents."
     input_schema: ClassVar[list[str]] = ["file_path", "new_content"]
 
+    def extra_context(self, conn: 'WorkspaceConnector', context: str):
+        # We want the file to be read, since its being overwritten should be aware of previous content
+        with conn.get_fs().open(self.inputs["file_path"], "r") as f:
+            content = f.read()
+        return f"I read {self.inputs['file_path']}, it contains:\n```\n{content}\n```"
+
     async def execute(self, conn: 'WorkspaceConnector', context: str) -> str:
         with conn.get_fs().open(self.inputs["file_path"], "w") as f:
             f.write(self.inputs["new_content"])
@@ -120,7 +126,8 @@ class ThinkNode(ActionNode):#WorkspaceNode,
     input_schema: ClassVar[list[str]] = []
 
     async def execute(self, conn: 'WorkspaceConnector', context: str) -> str:
-        return await baml.b.Think(context=context, description=self.purpose)
+        # TODO: Use client registry
+        return await baml.b.Think(context=context, description=self.purpose)#, baml_options={"client_registry": self.cg.get_client_registry()})
 
 
 class ConnectorWorker(Worker):

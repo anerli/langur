@@ -42,6 +42,12 @@ class ActionNode(Node):
     def action_type_name(cls):
         return cls.__name__
 
+    def extra_context(self, conn, context: str) -> str | None:
+        '''
+        Implement if you want the input filling procedure to include more information before populating.
+        '''
+        return None
+
     @abstractmethod
     async def execute(self, conn, context: str) -> str:
         pass
