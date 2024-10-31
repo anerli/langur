@@ -2,7 +2,7 @@ from abc import ABC
 from typing import Any, Callable, ClassVar, Dict, Type
 
 from pydantic import BaseModel, create_model
-from langur.actions import ActionNode
+from langur.actions import ActionContext, ActionNode
 from langur.connectors.connector_worker import ConnectorWorker
 from langur.util.schema import schema_from_function
 from langur.workers.worker import STATE_DONE
@@ -100,8 +100,10 @@ class Connector:
         schema = schema_from_function(fn)
 
         #print(fields_dict)
+        print(schema.fields_dict)
 
-        async def execute(self, conn, context):
+        # TODO: Pass ctx to fn if param ctx: ActionContext found in fn def
+        async def execute(self, ctx: ActionContext):#conn, context):
             return fn(**self.inputs)
 
         action_node_subtype = create_dynamic_model(

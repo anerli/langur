@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 import json
-from typing import Any, ClassVar, Optional, Set
+from typing import Any, ClassVar, Generic, Optional, Set, TypeVar, Union
 
 from pydantic import Field
 
+from langur.connectors.connector_worker import ConnectorWorker
 from langur.graph.edge import Edge
+from langur.graph.graph import CognitionGraph
 from langur.graph.node import Node
 from baml_py.type_builder import FieldType
 
@@ -21,6 +24,20 @@ from baml_py.type_builder import FieldType
 #         else:
 #             return f"{self.param_key}"
 
+# TODO: Bump required python to 3.12 to use default='ConnectorWorker'
+# C = TypeVar('C', bound='ConnectorWorker')
+
+# @dataclass
+# class ActionContext(Generic[C]):
+#     cg: CognitionGraph
+#     conn: C#Union[C, 'ConnectorWorker']#C
+#     ctx: str
+
+@dataclass
+class ActionContext:
+    cg: CognitionGraph
+    conn: ConnectorWorker
+    ctx: str
 
 class ActionNode(Node):
     definition: ClassVar[str]
@@ -43,14 +60,14 @@ class ActionNode(Node):
     def action_type_name(cls):
         return cls.__name__
 
-    def extra_context(self, conn, context: str) -> str | None:
+    def extra_context(self, ctx: ActionContext) -> str | None:
         '''
         Implement if you want the input filling procedure to include more information before populating.
         '''
         return None
 
     @abstractmethod
-    async def execute(self, conn, context: str) -> str:
+    async def execute(self, ctx: ActionContext) -> str:
         pass
     
     # def __init__(self, id: str, params: dict):#, thoughts: str):

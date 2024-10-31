@@ -11,7 +11,7 @@ from langur.connectors.connector_worker import ConnectorWorker
 from ..workers.worker import STATE_DONE, STATE_SETUP, Worker
 from ..graph.graph import CognitionGraph
 from ..graph.node import Node
-from ..actions import ActionNode
+from ..actions import ActionContext, ActionNode
 
 from typing import TYPE_CHECKING, Any, ClassVar, Type
 
@@ -100,8 +100,8 @@ class FileReadNode(ActionNode):#WorkspaceNode,
     definition: ClassVar[str] = "Read a single file's contents."
     input_schema: ClassVar[dict[str, Any]] = {"file_path": {"type": "string"}}
 
-    async def execute(self, conn: 'WorkspaceConnector', context: str) -> str:
-        with conn.get_fs().open(self.inputs["file_path"], "r") as f:
+    async def execute(self, ctx: ActionContext) -> str:
+        with ctx.conn.get_fs().open(self.inputs["file_path"], "r") as f:
             content = f.read()
         return f"I read {self.inputs['file_path']}, it contains:\n```\n{content}\n```"
 
@@ -109,14 +109,14 @@ class FileWriteNode(ActionNode):#WorkspaceNode,
     definition: ClassVar[str] = "Overwrite a single file's contents."
     input_schema: ClassVar[dict[str, Any]] = {"file_path": {"type": "string"}, "new_content": {"type": "string"}}
 
-    def extra_context(self, conn: 'WorkspaceConnector', context: str):
+    def extra_context(self, ctx: ActionContext):
         # We want the file to be read, since its being overwritten should be aware of previous content
-        with conn.get_fs().open(self.inputs["file_path"], "r") as f:
+        with ctx.conn.get_fs().open(self.inputs["file_path"], "r") as f:
             content = f.read()
         return f"I read {self.inputs['file_path']}, it contains:\n```\n{content}\n```"
 
-    async def execute(self, conn: 'WorkspaceConnector', context: str) -> str:
-        with conn.get_fs().open(self.inputs["file_path"], "w") as f:
+    async def execute(self, ctx: ActionContext) -> str:
+        with ctx.conn.get_fs().open(self.inputs["file_path"], "w") as f:
             f.write(self.inputs["new_content"])
         return f"I overwrote {self.inputs['file_path']}, it now contains:\n```\n{self.inputs['new_content']}\n```"
 
