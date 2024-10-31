@@ -70,7 +70,8 @@ class PlannerWorker(Worker):
             builder = tb.add_class(action_type_name)
             builder.add_property("type", tb.literal_string(action_type_name))
             
-            params = action_node_type.input_schema
+            # TODO: Actually use JSON schema values - for now just assuming strings
+            params = action_node_type.input_schema.keys()
 
             for param in params:
                 # use field type from action def but make optional (any problems if double applied?)
@@ -102,9 +103,13 @@ class PlannerWorker(Worker):
             print("node_data:", node_data)
             action_node_type = action_node_types[node_data.action_input["type"]]
             #nodes.append(ActionUseNode(item.id, item.action_input))
+
+            action_input_without_type = node_data.action_input.copy()
+            del action_input_without_type["type"]
+
             node = action_node_type(
                 id=node_data.id,
-                inputs=node_data.action_input,
+                inputs=action_input_without_type,
                 purpose=node_data.description,
                 connector_id=self.derive_connector(node_data).id
             )

@@ -1,14 +1,14 @@
 
 
-from typing import ClassVar, Type
+from typing import Any, ClassVar, Type
 from langur.actions import ActionNode
-from langur.connectors.connector import ConnectorWorker
+from langur.connectors.connector_worker import ConnectorWorker
 import langur.baml_client as baml
 from langur.workers.worker import STATE_DONE
 
 class ThinkNode(ActionNode):#WorkspaceNode,
     definition: ClassVar[str] = "Do purely cognitive processing."
-    input_schema: ClassVar[list[str]] = []
+    input_schema: ClassVar[dict[str, Any]] = {}
 
     async def execute(self, conn: 'CognitiveConnector', context: str) -> str:
         # TODO: Use client registry

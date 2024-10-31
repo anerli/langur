@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import json
-from typing import ClassVar, Optional, Set
+from typing import Any, ClassVar, Optional, Set
 
 from pydantic import Field
 
@@ -24,7 +24,8 @@ from baml_py.type_builder import FieldType
 
 class ActionNode(Node):
     definition: ClassVar[str]
-    input_schema: ClassVar[list[str]]
+    # TODO: input schema values are currently ignored, assumed to be strings
+    input_schema: ClassVar[dict[str, Any]]
 
     tags: ClassVar[list[str]] = ["action"]
 

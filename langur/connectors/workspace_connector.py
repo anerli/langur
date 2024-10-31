@@ -7,13 +7,13 @@ from fs.osfs import OSFS
 from fs.walk import Walker
 
 from langur.baml_client.type_builder import TypeBuilder
-from langur.connectors.connector import ConnectorWorker
+from langur.connectors.connector_worker import ConnectorWorker
 from ..workers.worker import STATE_DONE, STATE_SETUP, Worker
 from ..graph.graph import CognitionGraph
 from ..graph.node import Node
 from ..actions import ActionNode
 
-from typing import TYPE_CHECKING, ClassVar, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Type
 
 
 # class WorkspaceOverviewNode(Node):
@@ -98,17 +98,16 @@ class WorkspaceOverviewNode(WorkspaceNode):
 
 class FileReadNode(ActionNode):#WorkspaceNode,
     definition: ClassVar[str] = "Read a single file's contents."
-    input_schema: ClassVar[list[str]] = ["file_path"]
+    input_schema: ClassVar[dict[str, Any]] = {"file_path": {"type": "string"}}
 
     async def execute(self, conn: 'WorkspaceConnector', context: str) -> str:
-        # TODO: howto get workspace methods/path here?
         with conn.get_fs().open(self.inputs["file_path"], "r") as f:
             content = f.read()
         return f"I read {self.inputs['file_path']}, it contains:\n```\n{content}\n```"
 
 class FileWriteNode(ActionNode):#WorkspaceNode,
     definition: ClassVar[str] = "Overwrite a single file's contents."
-    input_schema: ClassVar[list[str]] = ["file_path", "new_content"]
+    input_schema: ClassVar[dict[str, Any]] = {"file_path": {"type": "string"}, "new_content": {"type": "string"}}
 
     def extra_context(self, conn: 'WorkspaceConnector', context: str):
         # We want the file to be read, since its being overwritten should be aware of previous content

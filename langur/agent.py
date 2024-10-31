@@ -7,7 +7,7 @@ import pickle
 from typing import Any, Dict, Literal, Optional
 from baml_py import ClientRegistry
 from pydantic import BaseModel
-from langur.connectors.connector import Connector
+#from langur.connectors.connector import Connector
 from langur.llm import LLMConfig
 from langur.workers.worker import STATE_DONE, Worker
 #from langur.world import World
@@ -35,13 +35,18 @@ class Agent:
         self.workers = workers
         
     
-    def use(self, *connectors: Connector):
-        for connector in connectors:
-            self.world.register_connector(connector)
-        return self
+    # def use(self, *connectors: Connector):
+    #     for connector in connectors:
+    #         self.world.register_connector(connector)
+    #     return self
 
+    def add_worker(self, worker: Worker):
+        self.workers.append(worker)
+        self.cg.add_worker(worker)
 
     async def run_until_done(self):
+
+        print("Workers:", self.workers)
         
         # could be helpful info to load/save cycle count instead of resetting if we loaded a prev agent, idk
         cycle_count = 0

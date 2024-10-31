@@ -6,11 +6,11 @@ from fs.osfs import OSFS
 from fs.walk import Walker
 from synthcog.commands.command import Command
 from synthcog.world import World
-from .connector import Connector, connected
+from .connector_worker import ConnectorWorker, connected
 
 
 
-class Workspace(Connector):
+class Workspace(ConnectorWorker):
     def __init__(self, filesystem: FS | str = None):
         if isinstance(filesystem, str):
             # assume string path for OSFS, also make dir if not exists

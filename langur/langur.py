@@ -2,9 +2,17 @@
 High level agent interface.
 '''
 
+import asyncio
 import json
-from langur.behavior import AgentBehavior
+from typing import Callable
+from langur.behavior import AgentBehavior, Task, Plan, Execute
 from langur.agent import Agent
+from langur.connector import Connector
+from langur.connectors.connector_worker import ConnectorWorker
+from langur.util.schema import schema_from_function
+from langur.workers.worker import Worker
+
+
 
 
 class Langur:
@@ -33,24 +41,43 @@ class Langur:
         
         # Custom behavior if provided, otherwise default behavior
         behavior = behavior if behavior else AgentBehavior(
-            Execute(Plan(Task(instructions)))
+            Plan(Task(instructions)),
+            Execute()
         )
 
+        #print(behavior)
+
         workers = behavior.compile()
+        #print(workers)
         self.agent = Agent(workers=workers)
 
 
+    # def get_default_connector(self):
+    #     if self._default_connector is None:
 
-    def use(self, connector):
+
+    def use(self, peripheral: Worker | Connector | Callable):
         # Use provided connector or tool
         # TODO: impl
         # self.agent.use(...)
-        pass
+        if isinstance(peripheral, Worker):
+            self.agent.add_worker(peripheral)
+        elif isinstance(peripheral, Callable):
+            print(schema_from_function(peripheral))
+        elif isinstance(peripheral, Connector):
+            worker_type = peripheral.to_worker_type()
+            print("adding worker of type:", worker_type)
+            self.agent.add_worker(worker_type())
+        else:
+            raise TypeError("Invalid peripheral:", peripheral)
         
 
-    def run(self):
+    def run(self, until: str = None):
         # TODO
-        pass
+        asyncio.run(self.agent.run_until_done())
+    
+    def show(self):
+        return self.agent.cg.show()
 
     def save(self, path: str):
         with open(path, "w") as f:
