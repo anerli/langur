@@ -7,13 +7,13 @@ from fs.osfs import OSFS
 from fs.walk import Walker
 
 from langur.baml_client.type_builder import TypeBuilder
-from .worker import STATE_DONE, STATE_SETUP, Worker
+from langur.connectors.connector import ConnectorWorker
+from ..workers.worker import STATE_DONE, STATE_SETUP, Worker
 from ..graph.graph import CognitionGraph
 from ..graph.node import Node
 from ..actions import ActionNode
-import langur.baml_client as baml
 
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Type
 
 
 # class WorkspaceOverviewNode(Node):
@@ -121,22 +121,17 @@ class FileWriteNode(ActionNode):#WorkspaceNode,
             f.write(self.inputs["new_content"])
         return f"I overwrote {self.inputs['file_path']}, it now contains:\n```\n{self.inputs['new_content']}\n```"
 
-class ThinkNode(ActionNode):#WorkspaceNode,
-    definition: ClassVar[str] = "Do purely cognitive processing."
-    input_schema: ClassVar[list[str]] = []
-
-    async def execute(self, conn: 'WorkspaceConnector', context: str) -> str:
-        # TODO: Use client registry
-        return await baml.b.Think(context=context, description=self.purpose)#, baml_options={"client_registry": self.cg.get_client_registry()})
 
 
-class ConnectorWorker(Worker):
-    @abstractmethod
-    def get_action_node_types(self) -> list[ActionNode]: ...
+# class ConnectorWorker(Worker):
+#     @abstractmethod
+#     def get_action_node_types(self) -> list[ActionNode]: ...
 
 class WorkspaceConnector(ConnectorWorker):
     '''Manages cognitive relations between the nexus and filesystem actions'''
     workspace_path: str
+
+    action_node_types: ClassVar[list[Type[ActionNode]]] = [FileReadNode, FileWriteNode]
 
     # def __init__(self, filesystem: FS | str = None):
     #     if isinstance(filesystem, str):
@@ -152,8 +147,9 @@ class WorkspaceConnector(ConnectorWorker):
     def get_fs(self):
         return OSFS(self.workspace_path)
     
-    def get_action_node_types(self) -> list[ActionNode]:
-        return [FileReadNode, FileWriteNode, ThinkNode]
+    # def get_action_node_types(self) -> list[ActionNode]:
+    #     return [FileReadNode, FileWriteNode, ThinkNode]
+    
     
     async def cycle(self):
         if self.state == STATE_SETUP:

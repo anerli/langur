@@ -7,7 +7,7 @@ import langur.baml_client as baml
 
 from typing import TYPE_CHECKING, ClassVar, Type
 
-from langur.workers.workspace_connector import ConnectorWorker
+from langur.connectors.workspace_connector import ConnectorWorker
 
 if TYPE_CHECKING:
     from .task import TaskNode
@@ -40,7 +40,7 @@ class PlannerWorker(Worker):
         connector = None
         for worker in connector_workers:
             #action_node_types = set()
-            for action_node_type in worker.get_action_node_types():
+            for action_node_type in worker.action_node_types:
                 #action_node_types
                 if node_data.action_input["type"] == action_node_type.action_type_name():
                     if connector:
@@ -56,7 +56,7 @@ class PlannerWorker(Worker):
         connector_workers = self.cg.query_workers(ConnectorWorker)
         action_node_types: dict[str, Type[ActionNode]] = {}
         for worker in connector_workers:
-            for action_node_type in worker.get_action_node_types():
+            for action_node_type in worker.action_node_types:
                 action_node_types[action_node_type.action_type_name()] = action_node_type
             #action_node_types.extend(worker.get_action_node_types())
     
