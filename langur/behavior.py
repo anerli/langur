@@ -14,12 +14,13 @@ from langur.workers.worker import Worker
 class AgentBehavior:
     def __init__(self, *behaviors: 'BaseBehavior'):
         self.behaviors = behaviors
+        self.task_counter = 0
 
     def compile(self) -> list[Worker]:
         # Compile behaviors into usable cognitive workers
         workers = []
         for behavior in self.behaviors:
-            workers.extend(behavior.compile())
+            workers.extend(behavior.compile(self))
         return workers
 
 # class AgentBehaviorTemplate:
@@ -33,9 +34,9 @@ class Task(BaseBehavior):
     def __init__(self, task: str):
         self.task = task
     
-    def compile(self):
-        # TODO: how to choose goal id? class inc? llm?
-        return [TaskWorker(task=self.task, node_id="goal")]
+    def compile(self, behavior: 'AgentBehavior'):
+        behavior.task_counter += 1
+        return [TaskWorker(task=self.task, node_id=f"goal_{behavior.task_counter}")]
 
 class Plan(BaseBehavior):
     '''
@@ -44,10 +45,10 @@ class Plan(BaseBehavior):
     def __init__(self, *tasks: Task):
         self.tasks: list[Task] = tasks
     
-    def compile(self):
+    def compile(self, behavior: 'AgentBehavior'):
         task_workers = []
         for task in self.tasks:
-            task_workers.extend(task.compile())
+            task_workers.extend(task.compile(behavior))
         
         planner_workers = [PlannerWorker(task_node_id=task_worker.node_id) for task_worker in task_workers]
         
@@ -66,7 +67,7 @@ class Execute(BaseBehavior):
     # def __init__(self, *plans: Plan):
     #     self.plans: list[Plan] = plans
     
-    def compile(self):
+    def compile(self, behavior: 'AgentBehavior'):
         return [ExecutorWorker()]
         # nested_workers = []
         # for plan in self.plans:

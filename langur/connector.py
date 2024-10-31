@@ -113,7 +113,6 @@ class Connector:
             ActionNode
         )
         self.action_node_subtypes.append(action_node_subtype)
-        return action_node_subtype
 
     def to_worker_type(self) -> Type[ConnectorWorker]:
         return create_dynamic_model(
