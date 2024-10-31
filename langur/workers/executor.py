@@ -16,7 +16,7 @@ class ExecutorWorker(Worker):
         '''
         action_nodes = self.cg.query_nodes_by_type(ActionNode)
 
-        #print("action nodes:", action_nodes)
+        print("action nodes:", action_nodes)
 
         # Naive linear impl
         frontier = set()
@@ -98,6 +98,7 @@ class ExecutorWorker(Worker):
         #return context
 
     async def execute_node(self, action_node: ActionNode) -> str:
+        print("Executing node:", action_node)
         # Find corresponding definition node
         # action_definition_nodes = list(filter(lambda node: "action_definition" in node.get_tags(), action_node.upstream_nodes()))
         # if len(action_definition_nodes) != 1:
@@ -117,7 +118,7 @@ class ExecutorWorker(Worker):
         await self.fill_params(action_node, action_ctx.ctx)
 
         #print("Context:", context)
-
+        print("ok executing FR:", action_ctx)
         output = await action_node.execute(
             action_ctx
         )

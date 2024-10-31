@@ -111,15 +111,23 @@ class FileWriteNode(ActionNode):#WorkspaceNode,
 
     def extra_context(self, ctx: ActionContext):
         # We want the file to be read, since its being overwritten should be aware of previous content
+        
         if self.inputs["file_path"]:
-            with ctx.conn.get_fs().open(self.inputs["file_path"], "r") as f:
-                content = f.read()
-            return f"I read {self.inputs['file_path']}, it contains:\n```\n{content}\n```"
+            file_path = self.inputs["file_path"]
+            fs: OSFS = ctx.conn.get_fs()
+            if fs.exists(file_path):
+                with ctx.conn.get_fs().open(file_path, "r") as f:
+                    content = f.read()
+                return f"I read {file_path}, it contains:\n```\n{content}\n```"
+            else:
+                return f"{file_path} is currently empty."
         else:
             # If file_path not in the partially filled input, not much to do here.
             return None
 
     async def execute(self, ctx: ActionContext) -> str:
+        print("Writing to:", self.inputs["file_path"])
+        print(ctx.conn.get_fs())
         with ctx.conn.get_fs().open(self.inputs["file_path"], "w") as f:
             f.write(self.inputs["new_content"])
         return f"I overwrote {self.inputs['file_path']}, it now contains:\n```\n{self.inputs['new_content']}\n```"
