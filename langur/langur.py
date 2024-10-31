@@ -47,6 +47,9 @@ class Langur:
 
         #print(behavior)
 
+        # Default connector for one-off lambda peripherals
+        #self._default_connector = None
+
         workers = behavior.compile()
         #print(workers)
         self.agent = Agent(workers=workers)
@@ -56,6 +59,7 @@ class Langur:
     #     if self._default_connector is None:
 
 
+
     def use(self, peripheral: Worker | Connector | Callable):
         # Use provided connector or tool
         # TODO: impl
@@ -63,7 +67,11 @@ class Langur:
         if isinstance(peripheral, Worker):
             self.agent.add_worker(peripheral)
         elif isinstance(peripheral, Callable):
-            print(schema_from_function(peripheral))
+            schema = schema_from_function(peripheral)
+            # One-off connector
+            conn = Connector(connector_name=schema.name)
+            conn.add_action(peripheral)
+            self.use(conn)
         elif isinstance(peripheral, Connector):
             worker_type = peripheral.to_worker_type()
             print("adding worker of type:", worker_type)

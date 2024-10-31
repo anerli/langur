@@ -114,7 +114,8 @@ class ExecutorWorker(Worker):
             conn=self.cg.query_worker_by_id(action_node.connector_id),
             context=context
         )
-        action_node.output = output
+        # Make sure not to put in None, else it will count as un-executed and run infinitely
+        action_node.output = output if output else ""
         return output
 
     async def execute_frontier(self):
