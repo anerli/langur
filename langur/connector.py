@@ -107,10 +107,12 @@ class Connector:
         if "ctx" in schema.fields_dict and "ctx" not in schema.json_schema["properties"]:
             # This means the fn specifies ctx: ActionContext
             async def execute(self, ctx: ActionContext):
-                return fn(ctx=ctx, **self.inputs)
+                result = fn(ctx=ctx, **self.inputs)
+                return f"Executed action {schema.name} with inputs {self.inputs}, result:\n{result}"
         else:
             async def execute(self, ctx: ActionContext):
-                return fn(**self.inputs)
+                result = fn(**self.inputs)
+                return f"Executed action {schema.name} with inputs {self.inputs}, result:\n{result}"
 
         action_node_subtype = create_dynamic_model(
             schema.name,

@@ -5,7 +5,7 @@ High level agent interface.
 import asyncio
 import json
 from typing import Callable
-from langur.behavior import AgentBehavior, Task, Plan, Execute
+from langur.behavior import AgentBehavior, BaseBehavior, Task, Plan, Execute
 from langur.agent import Agent
 from langur.connector import Connector
 from langur.connectors.connector_worker import ConnectorWorker
@@ -60,24 +60,42 @@ class Langur:
 
 
 
-    def use(self, peripheral: Worker | Connector | Callable):
+    def use(self, *peripherals: Worker | Connector | Callable | AgentBehavior | BaseBehavior):
+        '''
+        Provide a peripheral for the agent to use. You can provide:
+        - python function (or can @<agent>.use as decorator)
+        - Connector - a configurable object with multiple actions
+        - Behaviors - either composed AgentBehavior or an individual behavior - which will be added to existing behavior.
+        - Worker - low-level cognitive worker
+        '''
         # Use provided connector or tool
         # TODO: impl
         # self.agent.use(...)
-        if isinstance(peripheral, Worker):
-            self.agent.add_worker(peripheral)
-        elif isinstance(peripheral, Callable):
-            schema = schema_from_function(peripheral)
-            # One-off connector
-            conn = Connector(connector_name=schema.name)
-            conn.action(peripheral)
-            self.use(conn)
-        elif isinstance(peripheral, Connector):
-            worker_type = peripheral.to_worker_type()
-            print("adding worker of type:", worker_type)
-            self.agent.add_worker(worker_type())
-        else:
-            raise TypeError("Invalid peripheral:", peripheral)
+        for peripheral in peripherals:
+            if isinstance(peripheral, Worker):
+                self.agent.add_worker(peripheral)
+            elif isinstance(peripheral, Callable):
+                schema = schema_from_function(peripheral)
+                # One-off connector
+                conn = Connector(connector_name=schema.name)
+                conn.action(peripheral)
+                self.use(conn)
+            elif isinstance(peripheral, Connector):
+                worker_type = peripheral.to_worker_type()
+                print("adding worker of type:", worker_type)
+                self.agent.add_worker(worker_type())
+            elif isinstance(peripheral, BaseBehavior):
+                # Create one-off agent behavior to compile into workers
+                agent_behavior = AgentBehavior(
+                    peripheral
+                )
+                self.use(agent_behavior)
+            elif isinstance(peripheral, AgentBehavior):
+                workers = peripheral.compile()
+                for worker in workers:
+                    self.agent.add_worker(worker)
+            else:
+                raise TypeError("Invalid peripheral:", peripheral)
         
 
     def run(self, until: str = None):

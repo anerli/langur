@@ -111,9 +111,13 @@ class FileWriteNode(ActionNode):#WorkspaceNode,
 
     def extra_context(self, ctx: ActionContext):
         # We want the file to be read, since its being overwritten should be aware of previous content
-        with ctx.conn.get_fs().open(self.inputs["file_path"], "r") as f:
-            content = f.read()
-        return f"I read {self.inputs['file_path']}, it contains:\n```\n{content}\n```"
+        if self.inputs["file_path"]:
+            with ctx.conn.get_fs().open(self.inputs["file_path"], "r") as f:
+                content = f.read()
+            return f"I read {self.inputs['file_path']}, it contains:\n```\n{content}\n```"
+        else:
+            # If file_path not in the partially filled input, not much to do here.
+            return None
 
     async def execute(self, ctx: ActionContext) -> str:
         with ctx.conn.get_fs().open(self.inputs["file_path"], "w") as f:
@@ -126,7 +130,7 @@ class FileWriteNode(ActionNode):#WorkspaceNode,
 #     @abstractmethod
 #     def get_action_node_types(self) -> list[ActionNode]: ...
 
-class WorkspaceConnector(ConnectorWorker):
+class Workspace(ConnectorWorker):
     '''Manages cognitive relations between the nexus and filesystem actions'''
     workspace_path: str
 

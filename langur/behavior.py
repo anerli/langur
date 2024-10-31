@@ -3,6 +3,7 @@ High level wrapper essentially defining the cognitive workers to use for an agen
 '''
 
 from abc import ABC, abstractmethod
+from langur.connectors.assumer import AssumptionWorker
 from langur.workers.executor import ExecutorWorker
 from langur.workers.planner import PlannerWorker
 from langur.workers.task import TaskWorker
@@ -28,7 +29,7 @@ class AgentBehavior:
 
 class BaseBehavior(ABC):
     @abstractmethod
-    def compile(self) -> list[Worker]: ...
+    def compile(self, behavior: 'AgentBehavior') -> list[Worker]: ...
 
 class Task(BaseBehavior):
     def __init__(self, task: str):
@@ -37,6 +38,10 @@ class Task(BaseBehavior):
     def compile(self, behavior: 'AgentBehavior'):
         behavior.task_counter += 1
         return [TaskWorker(task=self.task, node_id=f"goal_{behavior.task_counter}")]
+
+class Assume(BaseBehavior):
+    def compile(self, behavior: 'AgentBehavior'):
+        return [AssumptionWorker()]
 
 class Plan(BaseBehavior):
     '''
@@ -80,9 +85,9 @@ class Execute(BaseBehavior):
         # TODO: implement once we have executor worker
         #return nested_workers
 
-class Assume(BaseBehavior):
-    # TODO: implement once have assumption worker
-    pass
+# class Assume(BaseBehavior):
+#     # TODO: implement once have assumption worker
+#     pass
 
 
 # # TODO: allow some templating system here, e.g. default behavior here allows some kwarg "goal" which feeds into the Task's task param
