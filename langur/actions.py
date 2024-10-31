@@ -5,11 +5,16 @@ from typing import Any, ClassVar, Generic, Optional, Set, TypeVar, Union
 
 from pydantic import Field
 
-from langur.connectors.connector_worker import ConnectorWorker
+
 from langur.graph.edge import Edge
 from langur.graph.graph import CognitionGraph
 from langur.graph.node import Node
 from baml_py.type_builder import FieldType
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from langur.connectors.connector_worker import ConnectorWorker
 
 
 # class ActionParameter:
@@ -36,7 +41,7 @@ from baml_py.type_builder import FieldType
 @dataclass
 class ActionContext:
     cg: CognitionGraph
-    conn: ConnectorWorker
+    conn: 'ConnectorWorker'
     ctx: str
 
 class ActionNode(Node):

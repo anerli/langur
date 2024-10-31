@@ -95,8 +95,8 @@ class Connector:
         '''
         self.connector_name = connector_name
         self.action_node_subtypes = []
-
-    def add_action(self, fn: Callable[[Any], Any]):
+    
+    def action(self, fn: Callable[[Any], Any]):
         schema = schema_from_function(fn)
 
         #print(fields_dict)

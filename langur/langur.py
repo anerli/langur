@@ -70,7 +70,7 @@ class Langur:
             schema = schema_from_function(peripheral)
             # One-off connector
             conn = Connector(connector_name=schema.name)
-            conn.add_action(peripheral)
+            conn.action(peripheral)
             self.use(conn)
         elif isinstance(peripheral, Connector):
             worker_type = peripheral.to_worker_type()
