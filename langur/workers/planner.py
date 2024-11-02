@@ -7,7 +7,7 @@ import langur.baml_client as baml
 
 from typing import TYPE_CHECKING, ClassVar, Type
 
-from langur.connectors.workspace_connector import ConnectorWorker
+from langur.connectors.workspace_connector import Connector
 
 if TYPE_CHECKING:
     from .task import TaskNode
@@ -25,7 +25,7 @@ class PlannerWorker(Worker):
             await self.plan_task()
             self.state = STATE_DONE
 
-    def derive_connector(self, node_data: BAMLActionNode) -> ConnectorWorker:
+    def derive_connector(self, node_data: BAMLActionNode) -> Connector:
         '''
         Derive the connector that is associated with the given generated action node.
         TODO: Will eventually need a method for differentiating connectors which have the sames types of actions available
@@ -35,7 +35,7 @@ class PlannerWorker(Worker):
 
         For now, multiple connectors of the same type are not allowed.
         '''
-        connector_workers = self.cg.query_workers(ConnectorWorker)
+        connector_workers = self.cg.query_workers(Connector)
         #action_node_types: dict[str, Type[ActionNode]] = {}
         connector = None
         for worker in connector_workers:
@@ -53,7 +53,7 @@ class PlannerWorker(Worker):
 
     async def plan_task(self):
         #action_def_nodes: list[ActionDefinitionNode] = self.cg.query_nodes_by_tag("action_definition")
-        connector_workers = self.cg.query_workers(ConnectorWorker)
+        connector_workers = self.cg.query_workers(Connector)
         action_node_types: dict[str, Type[ActionNode]] = {}
         for worker in connector_workers:
             for action_node_type in worker.action_node_types:

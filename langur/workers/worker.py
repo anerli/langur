@@ -17,19 +17,7 @@ STATE_SETUP = "SETUP"
 # end state for most workers
 STATE_DONE = "DONE"
 
-# GraphRef = ForwardRef('Graph')
-
 CUID = Cuid(length=10)
-
-class GraphField(FieldInfo):
-    def __init__(self):
-        super().__init__(default=None)
-
-    def _annotation_ext(self) -> Any:
-        return Any
-        
-    def json_schema(self) -> JsonSchemaValue:
-        return {"type": "object"}
 
 class Worker(BaseModel, ABC):
     '''
@@ -38,55 +26,15 @@ class Worker(BaseModel, ABC):
     Be careful when overriding __init__, kwargs must include all custom properties in order to be automatically deserialized properly.
     '''
     
-    # Workers are often state machines, this state is serialized and retained
-    # DO NOT SET DIRECTLY, USE set_state
-    #state: str = Field(default=STATE_SETUP)
-
-    #_state: str = PrivateAttr(default=STATE_SETUP)  # Private storage
+    
     id: str = Field(default_factory=CUID.generate)
-    state: str = Field(default=STATE_SETUP)  # Public field
+    # Workers are often state machines, this state is serialized and retained
+    state: str = Field(default=STATE_SETUP)
 
-    # def __init__(self, **data):
-    #     super().__init__(**data)
-    #     self._state = self.state  # Sync initial value
-
-    # @property
-    # def state(self) -> str:
-    #     return self._state
-        
-    # @state.setter
-    # def state(self, value: str) -> None:
-    #     print('set state:', value)
-    #     self._state = value
-
-    # Ref needs to be set after init hence optional
-    #graph: Optional['Graph'] = Field(default=None, exclude=True, annotation_extractor=GraphField)
-
-    #_state: str = PrivateAttr(default=STATE_SETUP, alias='state')
-
-    # Should be set by Worker subclasses
-    #_event_prefix: ClassVar[str]
     _subclasses: ClassVar[Dict[str, Type['Worker']]] = {}
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
-    # def __setattr__(self, name, value):
-    #     if name == 'state':
-    #         self._on_state_change(value)
-    #     object.__setattr__(name, value)
-    
-    # def _on_state_change(self, value):
-    #     print('new state:', value)
 
-    # @property
-    # def state(self) -> str:
-    #     return self._state
-        
-    # @state.setter
-    # def state(self, value: str) -> None:
-    #     print('set state:', value)
-    #     self._state = value
-    
     # Bypass pydantic sillyness for the graph ref
     @property
     def cg(self) -> 'CognitionGraph':
@@ -107,20 +55,6 @@ class Worker(BaseModel, ABC):
     def __hash__(self):
         return hash((self.__class__.__name__, id(self)))
 
-    # def emit(self, event: str):
-    #     self.cg.emit(f"{self._event_prefix}.{event}")
-
-    #def set_state()
-
-    # def get_setup_order(self) -> int:
-    #     '''Lower order = earlier in setup'''
-    #     # Very simplistic system, likely will need to be redesigned
-    #     return 0
-    
-    # async def setup(self, graph: 'Graph'):
-    #     '''Runs once when workers are added to nexus'''
-    #     pass
-
     async def cycle(self):
         '''
         Do one cycle with this worker; the implementation will vary widely depending on the worker's purpose.
@@ -129,7 +63,6 @@ class Worker(BaseModel, ABC):
         pass
     
     # Using different terminology from Pydantic serde functions to avoid confusion since these are a bit different
-
     def to_json(self) -> dict:
         data = super().model_dump(mode="json")
         # Insert subclass name so can reconstruct correct class later
@@ -149,8 +82,3 @@ class Worker(BaseModel, ABC):
         data_no_worker_type = data.copy()
         del data_no_worker_type["worker_type"]
         return worker_class.model_validate(data_no_worker_type)
-
-# from langur.graph.graph import Graph
-# Worker.model_rebuild()
-# Worker.update_forward_refs(Graph=ForwardRef('Graph'))
-# Worker.model_rebuild()

@@ -3,7 +3,7 @@ from typing import Any, Callable, ClassVar, Dict, Type
 
 from pydantic import BaseModel, create_model
 from langur.actions import ActionContext, ActionNode
-from langur.connectors.connector_worker import ConnectorWorker
+from langur.connectors.connector import Connector
 from langur.util.schema import schema_from_function
 from langur.workers.worker import STATE_DONE
 
@@ -124,10 +124,10 @@ class Connector:
         )
         self.action_node_subtypes.append(action_node_subtype)
 
-    def to_worker_type(self) -> Type[ConnectorWorker]:
+    def to_worker_type(self) -> Type[Connector]:
         return create_dynamic_model(
             self.connector_name,
             {"action_node_types": (ClassVar[list[Type[ActionNode]]], self.action_node_subtypes)},
             {},
-            ConnectorWorker
+            Connector
         )

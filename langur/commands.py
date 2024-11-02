@@ -7,7 +7,7 @@ client = OpenAI()
 
 if TYPE_CHECKING:
     from synthcog.world import World
-    from .connectors.connector_worker import ConnectorWorker
+    from .connectors.connector import Connector
 
 DEPENDENT_INPUTS_SUFFIX = "_dependencies"
 
@@ -25,7 +25,7 @@ class Command():
         self.inputs = inputs
     
     @classmethod
-    def get_connector_types(cls) -> List[Type['ConnectorWorker']]:
+    def get_connector_types(cls) -> List[Type['Connector']]:
         return list(cls._connector_types)
     
     @classmethod

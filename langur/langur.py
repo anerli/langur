@@ -8,7 +8,7 @@ from typing import Callable
 from langur.behavior import AgentBehavior, BaseBehavior, Task, Plan, Execute
 from langur.agent import Agent
 from langur.connector import Connector
-from langur.connectors.connector_worker import ConnectorWorker
+from langur.connectors.connector import Connector
 from langur.util.schema import schema_from_function
 from langur.workers.worker import Worker
 

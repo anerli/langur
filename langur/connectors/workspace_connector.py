@@ -7,7 +7,7 @@ from fs.osfs import OSFS
 from fs.walk import Walker
 
 from langur.baml_client.type_builder import TypeBuilder
-from langur.connectors.connector_worker import ConnectorWorker
+from langur.connectors.connector import Connector
 from ..workers.worker import STATE_DONE, STATE_SETUP, Worker
 from ..graph.graph import CognitionGraph
 from ..graph.node import Node
@@ -138,7 +138,7 @@ class FileWriteNode(ActionNode):#WorkspaceNode,
 #     @abstractmethod
 #     def get_action_node_types(self) -> list[ActionNode]: ...
 
-class Workspace(ConnectorWorker):
+class Workspace(Connector):
     '''Manages cognitive relations between the nexus and filesystem actions'''
     workspace_path: str
 

@@ -14,7 +14,7 @@ from baml_py.type_builder import FieldType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from langur.connectors.connector_worker import ConnectorWorker
+    from langur.connectors.connector import Connector
 
 
 # class ActionParameter:
@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 @dataclass
 class ActionContext:
     cg: CognitionGraph
-    conn: 'ConnectorWorker'
+    conn: 'Connector'
     ctx: str
 
 class ActionNode(Node):
