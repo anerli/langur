@@ -4,6 +4,7 @@ from langur.baml_client.type_builder import TypeBuilder
 from langur.graph.graph import CognitionGraph
 from langur.workers.worker import STATE_DONE, STATE_SETUP, Worker
 import langur.baml_client as baml
+from langur.util.registries import action_node_type_registry
 
 from typing import TYPE_CHECKING, ClassVar, Type
 
@@ -40,7 +41,7 @@ class PlannerWorker(Worker):
         connector = None
         for worker in connector_workers:
             #action_node_types = set()
-            for action_node_type in worker.action_node_types:
+            for action_node_type in action_node_type_registry.get_action_node_types(worker.__class__.__name__):#worker.action_node_types:
                 #action_node_types
                 if node_data.action_input["type"] == action_node_type.action_type_name():
                     if connector:
@@ -56,7 +57,7 @@ class PlannerWorker(Worker):
         connector_workers = self.cg.query_workers(Connector)
         action_node_types: dict[str, Type[ActionNode]] = {}
         for worker in connector_workers:
-            for action_node_type in worker.action_node_types:
+            for action_node_type in action_node_type_registry.get_action_node_types(worker.__class__.__name__):#worker.action_node_types:
                 action_node_types[action_node_type.action_type_name()] = action_node_type
             #action_node_types.extend(worker.get_action_node_types())
     
@@ -87,7 +88,7 @@ class PlannerWorker(Worker):
         task_node: 'TaskNode' = self.cg.query_node_by_id(self.task_node_id)
         resp = await baml.b.PlanActions(
             goal=task_node.task,
-            observables="\n".join([node.content() for node in self.cg.query_nodes_by_tag("observable")]),
+            observables="\n".join([node.observe() for node in self.cg.query_nodes_by_tag("observable")]),
             action_types="\n".join([f"- {action_type_name}: {action_node_type.definition}" for action_type_name, action_node_type in action_node_types.items()]),
             baml_options={
                 "tb": tb,

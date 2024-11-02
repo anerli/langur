@@ -7,7 +7,7 @@ client = OpenAI()
 
 if TYPE_CHECKING:
     from synthcog.world import World
-    from .connectors.connector import Connector
+    from .connector import Connector
 
 DEPENDENT_INPUTS_SUFFIX = "_dependencies"
 

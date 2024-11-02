@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Dict, List, Set, Type
 from collections import defaultdict
 
 if TYPE_CHECKING:
-    from langur.connectors.connector import Connector
+    from langur.connector import Connector
     from langur.actions import ActionNode
 
 class ActionNodeRegistry:

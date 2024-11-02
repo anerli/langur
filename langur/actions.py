@@ -14,7 +14,7 @@ from baml_py.type_builder import FieldType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from langur.connectors.connector import Connector
+    from langur.connector import Connector
 
 
 # class ActionParameter:

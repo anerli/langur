@@ -3,7 +3,7 @@ High level wrapper essentially defining the cognitive workers to use for an agen
 '''
 
 from abc import ABC, abstractmethod
-from langur.connectors.assumer import AssumptionWorker
+from langur.workers.assumer import AssumptionWorker
 from langur.workers.executor import ExecutorWorker
 from langur.workers.planner import PlannerWorker
 from langur.workers.task import TaskWorker

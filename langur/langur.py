@@ -8,7 +8,7 @@ from typing import Callable
 from langur.behavior import AgentBehavior, BaseBehavior, Task, Plan, Execute
 from langur.agent import Agent
 from langur.connector import Connector
-from langur.connectors.connector import Connector
+from langur.connector import Connector
 from langur.util.schema import schema_from_function
 from langur.workers.worker import Worker
 
@@ -80,10 +80,10 @@ class Langur:
                 conn = Connector(connector_name=schema.name)
                 conn.action(peripheral)
                 self.use(conn)
-            elif isinstance(peripheral, Connector):
-                worker_type = peripheral.to_worker_type()
-                print("adding worker of type:", worker_type)
-                self.agent.add_worker(worker_type())
+            # elif isinstance(peripheral, Connector):
+            #     worker_type = peripheral.to_worker_type()
+            #     print("adding worker of type:", worker_type)
+            #     self.agent.add_worker(worker_type())
             elif isinstance(peripheral, BaseBehavior):
                 # Create one-off agent behavior to compile into workers
                 agent_behavior = AgentBehavior(

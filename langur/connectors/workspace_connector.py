@@ -7,7 +7,7 @@ from fs.osfs import OSFS
 from fs.walk import Walker
 
 from langur.baml_client.type_builder import TypeBuilder
-from langur.connectors.connector import Connector
+from langur.connector import Connector
 from ..workers.worker import STATE_DONE, STATE_SETUP, Worker
 from ..graph.graph import CognitionGraph
 from ..graph.node import Node

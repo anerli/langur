@@ -6,11 +6,14 @@ from fs.osfs import OSFS
 from fs.walk import Walker
 
 from langur.actions import ActionContext
-from langur.connectors.connector import Connector
+from langur.connector import Connector, action
 
 
 # Ideal Workpace Implementation
 class Workspace(Connector):
+    '''
+    path: Path to workspace directory.
+    '''
     path: str
 
     # Inherited available properties: cg
@@ -34,10 +37,13 @@ class Workspace(Connector):
     @action
     def read_file(self, file_path: str, ctx: ActionContext):
         '''Read a single file's contents'''
-
+        with self.get_fs().open(file_path, "r") as f:
+            content = f.read()
+        return f"I read {file_path}, it contains:\n```\n{content}\n```"
     
+    # # TODO: Implement extra_context fn kwarg for action deco e.g. @action(extra_context=read_file)
+    # @action
 
-    @action(extra_context=read_file)
 
 
 # Usage
