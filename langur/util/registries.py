@@ -11,12 +11,12 @@ class ActionNodeRegistry:
     This way cognitive workers can be aware of what action types are available by looking at loaded Connectors.
     '''
     def __init__(self):
-        self._connector_actions: Dict[str, Set[Type['ActionNode']]] = defaultdict(set)
+        self._connector_actions: Dict[str, Dict[str, Type['ActionNode']]] = defaultdict(dict)
     
     def register(self, connector_class_name: str, action_cls: Type['ActionNode']):
-        self._connector_actions[connector_class_name].add(action_cls)
+        self._connector_actions[connector_class_name][action_cls.__name__] = action_cls
     
-    def get_action_node_types(self, connector_class_name: str) -> List[Type['ActionNode']]:
-        return self._connector_actions[connector_class_name]
+    def get_action_node_types(self, connector_class_name: str) -> Set[Type['ActionNode']]:
+        return set(self._connector_actions[connector_class_name].values())
 
 action_node_type_registry = ActionNodeRegistry()
