@@ -50,10 +50,14 @@ from langur.util.registries import action_node_type_registry
 def action(
     fn: Optional[Callable] = None,
     tags: Optional[List[str]] = None,
-    extra_context: Optional[Callable[[Any], str]] = None
+    extra_context: Optional[Callable[[Dict[str, Any], Optional[ActionContext]], str]] = None
 ):
     """
     Decorator that can be used either as @action or @action(kw1=...)
+
+    extra_context: An additional function to return more context whenever this action is being executed.
+    - The fields of this function need to match the fields of the action, except each needs a None default!
+    - Should return a str which serves as context for the LLM when deciding on inputs for the action.
     """
     print("tags:", tags)
     tags = tags if tags else []
@@ -64,12 +68,34 @@ def action(
         
         if "ctx" in schema.fields_dict and "ctx" not in schema.json_schema["properties"]:
             async def execute(self, ctx: ActionContext):
+                # print("self:", self)
+                # print("cls:", self.__class__.__name__)
+                # print("inputs:", self.inputs)
                 result = func(self=ctx.conn, ctx=ctx, **self.inputs)
                 return f"Executed action {schema.name} with inputs {self.inputs}, result:\n{result}"
         else:
             async def execute(self, ctx: ActionContext):
+                # print("self:", self)
+                # print("cls:", self.__class__.__name__)
+                # inputs = self.inputs
+                # print("inputs:", inputs)
                 result = func(self=ctx.conn, **self.inputs)
                 return f"Executed action {schema.name} with inputs {self.inputs}, result:\n{result}"
+        
+        func_dict = {"execute": execute}    
+
+        if extra_context is not None:
+            extra_schema = schema_from_function(extra_context)
+            if "ctx" in extra_schema.fields_dict and "ctx" not in extra_schema.json_schema["properties"]:
+                def extra_context_wrapper(self, ctx: ActionContext):
+                    #return extra_context(self=ctx.conn, ctx=ctx, inputs=self.inputs)
+                    return extra_context(self=ctx.conn, ctx=ctx, **self.inputs)
+            else:
+                def extra_context_wrapper(self, ctx: ActionContext):
+                    return extra_context(self=ctx.conn, **self.inputs)
+                    #return extra_context(self=ctx.conn, ctx=ctx, inputs=self.inputs)
+            
+            func_dict["extra_context"] = extra_context_wrapper
         
         action_node_subtype = create_dynamic_model(
             schema.name,
@@ -77,7 +103,7 @@ def action(
                 "definition": (ClassVar[str], schema.description),
                 "input_schema": (ClassVar[dict[str, Any]], schema.json_schema["properties"])
             },
-            {"execute": execute},
+            func_dict,
             ActionNode
         )
         

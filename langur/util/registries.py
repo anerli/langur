@@ -39,13 +39,14 @@ class ActionNodeRegistry:
     
     def get_action_node_types(self, connector_class_name: str, action_filter: ActionNodeRegistryFilter=None) -> Set[Type['ActionNode']]:
         entries = list(self._connector_actions[connector_class_name].values())
+        #print(entries)
         if action_filter:
             if action_filter.names is not None:
                 entries = list(filter(lambda a: a.name in action_filter.names, entries))
             if action_filter.tags is not None:
                 entries = list(filter(lambda a: any(tag in action_filter.tags for tag in a.tags), entries))
         # Return just the action node types after filtering done
-        print("entries:", entries)
+        #print("entries:", entries)
         return set(a.action_node_type for a in entries)
 
 action_node_type_registry = ActionNodeRegistry()

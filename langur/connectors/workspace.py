@@ -35,16 +35,30 @@ class Workspace(Connector):
         return s
 
     @action
-    def read_file(self, file_path: str, ctx: ActionContext):
+    def read_file(self, file_path: str):#, ctx: ActionContext
         '''Read a single file's contents'''
         with self.get_fs().open(file_path, "r") as f:
             content = f.read()
         return f"I read {file_path}, it contains:\n```\n{content}\n```"
-    
-    # # TODO: Implement extra_context fn kwarg for action deco e.g. @action(extra_context=read_file)
-    @action(extra_context=read_file)
+
+    def write_file_extra_context(self, file_path: str = None, new_content: str = None) -> str:
+        '''
+        Since the write file operation overwrites a file, if it has existing content, it should know about it
+        before deciding any new content.
+        '''
+        if file_path:
+            if self.get_fs().exists(file_path):
+                return self.read_file(file_path)
+            else:
+                return f"{file_path} is currently empty."
+
+    @action(extra_context=write_file_extra_context)
     def write_file(self, file_path: str, new_content: str):
-        pass
+        with self.get_fs().open(file_path, "w") as f:
+            f.write(new_content)
+        return f"I overwrote {file_path}, it now contains:\n```\n{new_content}\n```"
+
+
 
 
 
