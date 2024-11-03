@@ -8,7 +8,7 @@ from langur.util.registries import action_node_type_registry
 
 from typing import TYPE_CHECKING, ClassVar, Type
 
-from langur.connectors.workspace_connector import Connector
+from langur.connector import Connector
 
 if TYPE_CHECKING:
     from .task import TaskNode

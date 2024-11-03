@@ -34,7 +34,7 @@ class Workspace(Connector):
         s += "\n".join(file_list)
         return s
 
-    @action
+    @action(tags=["read"])
     def read_file(self, file_path: str):#, ctx: ActionContext
         '''Read a single file's contents'''
         with self.get_fs().open(file_path, "r") as f:
@@ -52,7 +52,7 @@ class Workspace(Connector):
             else:
                 return f"{file_path} is currently empty."
 
-    @action(extra_context=write_file_extra_context)
+    @action(tags=["write"], extra_context=write_file_extra_context)
     def write_file(self, file_path: str, new_content: str):
         with self.get_fs().open(file_path, "w") as f:
             f.write(new_content)

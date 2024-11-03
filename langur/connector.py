@@ -5,13 +5,13 @@ General connector cognitive worker - binds real-world connectors to the Langur c
 from abc import ABC
 from typing import Any, Callable, ClassVar, Dict, List, Optional, Type
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from langur.actions import ActionContext, ActionNode
 from langur.graph.node import Node
 from langur.util.schema import schema_from_function
 from langur.util.model_builder import create_dynamic_model
 from langur.workers.worker import STATE_DONE, STATE_SETUP, Worker
-from langur.util.registries import action_node_type_registry
+from langur.util.registries import ActionNodeRegistryFilter, action_node_type_registry
 
 
 # def action(fn: Callable[[Any], Any]):
@@ -140,6 +140,7 @@ class Connector(Worker, ABC):
     Generic Connector. Can subclass to implement own
     '''
     #action_node_types: ClassVar[list[Type[ActionNode]]]
+    action_node_type_filter: ActionNodeRegistryFilter = Field(default_factory=ActionNodeRegistryFilter)
 
     def overview(self) -> str | None:
         '''
@@ -164,3 +165,41 @@ class Connector(Worker, ABC):
         
         if self.state == STATE_SETUP:
             self.state = STATE_DONE
+    
+    
+    
+    # def with_actions(self, names: List[str] = None, tags: List[str] = None):
+    #     '''
+    #     Filter the actions available to this connector.
+    #     With no filtering applied, all actions will be available.
+    #     If names are provided, only actions with function names matching those names will be provided.
+    #     If tags are provided, only actions with at least one of those tags are provided.
+    #     If both are provided, the actions must match both.
+    #     '''
+    #     if names is not None:
+    #         self.action_node_type_filter.names = set(names)
+    #         # if self.action_node_type_filter.names is None:
+    #         #     self.action_node_type_filter.names = set()
+    #         # self.action_node_type_filter.names = self.action_node_type_filter.names.union(names)
+    #     if tags is not None:
+    #         self.action_node_type_filter.tags = set(tags)
+    #         # if self.action_node_type_filter.tags is None:
+    #         #     self.action_node_type_filter.tags = set()
+    #         # self.action_node_type_filter.tags = self.action_node_type_filter.tags.union(tags)
+
+    def enable(self, names: List[str] = None, tags: List[str] = None):
+        '''Make actions with certain names or tags available to the agent.'''
+        self.action_node_type_filter.enable_actions(names=names, tags=tags)
+
+    def disable(self, names: List[str] = None, tags: List[str] = None):
+        '''Make actions with certain names or tags unavailable to the agent.'''
+        self.action_node_type_filter.disable_actions(names=names, tags=tags)
+    
+    def list_actions(self) -> List[str]:
+        return [typ.action_type_name() for typ in self.get_action_node_types()]
+
+    def get_action_node_types(self) -> List[Type['ActionNode']]:
+        return action_node_type_registry.get_action_node_types(
+            self.__class__.__name__,
+            self.action_node_type_filter
+        )
