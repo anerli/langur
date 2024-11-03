@@ -42,7 +42,9 @@ class Workspace(Connector):
         return f"I read {file_path}, it contains:\n```\n{content}\n```"
     
     # # TODO: Implement extra_context fn kwarg for action deco e.g. @action(extra_context=read_file)
-    # @action
+    @action(extra_context=read_file)
+    def write_file(self, file_path: str, new_content: str):
+        pass
 
 
 
