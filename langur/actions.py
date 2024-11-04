@@ -29,15 +29,6 @@ if TYPE_CHECKING:
 #         else:
 #             return f"{self.param_key}"
 
-# TODO: Bump required python to 3.12 to use default='ConnectorWorker'
-# C = TypeVar('C', bound='ConnectorWorker')
-
-# @dataclass
-# class ActionContext(Generic[C]):
-#     cg: CognitionGraph
-#     conn: C#Union[C, 'ConnectorWorker']#C
-#     ctx: str
-
 @dataclass
 class ActionContext:
     cg: CognitionGraph
@@ -86,35 +77,3 @@ class ActionNode(Node):
     #     formatted_inputs = json.dumps(self.params)
     #     return f"Action Use ID: {self.id}\nAction Inputs:\n{formatted_inputs}"
 
-
-
-
-
-# class ActionDefinitionNode(Node, ABC):
-#     '''
-#     description: natural language description of exactly what this action does
-#     schema: JSON schema defining input for this action
-#     '''
-#     tags: ClassVar[list[str]] = ["action_definition"]
-#     #edges: Set['Edge'] = Field(default_factory=set, exclude=True)
-
-#     # general connector worker
-#     #worker: Worker
-
-#     description: str
-#     #params: list[ActionParameter] = Field(exclude=True)
-#     # TODO: tmp, assume all strings and just have names - until BAML supports dynamic types from JSON schema
-#     params: list[str]
-
-#     #context: str
-    
-    
-#     def content(self) -> str:
-#         #formatted_schema = json.dumps(self.schema)
-#         params = ", ".join(str(p) for p in self.params)
-#         return f"Action ID: {self.id}\nAction Description: {self.description}\nAction Parameters: {params}"#\nAction Input Schema:\n{formatted_schema}
-
-#     @abstractmethod
-#     async def execute(self, params: dict[str, str], context: str): ...
-#     #def execute(self, *args, **kwargs) -> str: ...
-    
