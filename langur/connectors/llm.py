@@ -2,8 +2,7 @@ from langur.actions import ActionContext
 from langur.connector import Connector, action
 import langur.baml_client as baml
 
-class Cognitive(Connector):
-    # TODO: Support async actions
+class LLM(Connector):
     @action
     async def think(self, ctx: ActionContext) -> str:
         '''Do purely cognitive processing'''

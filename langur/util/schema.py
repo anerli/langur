@@ -16,6 +16,7 @@ class SchemaResult:
     description: str
     json_schema: dict
     fields_dict: Dict[str, tuple[Any, FieldInfo]]
+    is_async: bool
 
 def schema_from_function(fn: Callable) -> SchemaResult:
     """
@@ -33,6 +34,7 @@ def schema_from_function(fn: Callable) -> SchemaResult:
     name = fn.__name__
     description = fn.__doc__ or ""
     signature = inspect.signature(fn)
+    is_async = inspect.iscoroutinefunction(fn)
     
     # Create a wrapper function without ActionContext parameters for schema generation
     def wrapper_fn(*args, **kwargs):
@@ -125,4 +127,10 @@ def schema_from_function(fn: Callable) -> SchemaResult:
         print("WARNING: Actions without descriptions may not perform well, give functions a doc comment description to define them for the agent.")
         description = "(No description provided)"
    
-    return SchemaResult(name, description, json_schema, fields_dict)
+    return SchemaResult(
+        name=name,
+        description=description,
+        json_schema=json_schema,
+        fields_dict=fields_dict,
+        is_async=is_async
+    )
