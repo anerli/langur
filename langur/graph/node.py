@@ -17,9 +17,6 @@ class Node(BaseModel):
         arbitrary_types_allowed=True
     )
 
-    # def __init__(self, **data):
-    #     super().__init__(**data)
-
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         Node._subclasses[cls.__name__] = cls

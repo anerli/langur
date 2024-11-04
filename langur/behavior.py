@@ -85,10 +85,6 @@ class Execute(BaseBehavior):
         # TODO: implement once we have executor worker
         #return nested_workers
 
-# class Assume(BaseBehavior):
-#     # TODO: implement once have assumption worker
-#     pass
-
 
 # # TODO: allow some templating system here, e.g. default behavior here allows some kwarg "goal" which feeds into the Task's task param
 # DEFAULT_AGENT_BEHAVIOR = lambda goal: AgentBehavior(

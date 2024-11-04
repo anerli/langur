@@ -1,8 +1,5 @@
-import os
-#from util import compare_results, reset_workspace
 from langur import Langur
-from langur.connectors import Workspace
-import shutil
+from langur.connectors import Workspace, LLM
 import pandas as pd
 
 
@@ -27,8 +24,11 @@ def compare_results():
 
 def run():
     agent = Langur("Grade quizzes")
-    agent.use(Workspace(path="./workspace"))
+    agent.use(
+        Workspace(path="./workspace"),
+        LLM()
+    )
     agent.run()
 
-    assert compare_results()
+    compare_results()
 

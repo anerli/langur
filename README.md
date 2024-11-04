@@ -176,6 +176,8 @@ agent.save_graph_html("meow.html")
 
 This example plans for two different tasks instead of one, and also includes an additional behavior `Assume` which isn't included by default. The `Assume` behavior make several assumptions about any provided tasks before planning actually starts, for example "verbal_output_required: The output should be a verbal/textual representation of a cat's meow sound".
 
+In the future, there will be much more interesting and nontrivial variations of behavior available to use.
+
 If you want to define completely new behaviors, that's also possible within the Langur framework. Currently it may be a bit tricky, so if you're interested in learning more about that, please reach out to me on the [Langur Discord](https://discord.gg/wSBSP56V7U).
 
 
@@ -195,6 +197,15 @@ agent = Langur(
 ```
 In this example, we configured Langur to use OpenAI's `gpt-4o-mini`. You can use open source LLMs by using Ollama / vLLM providers for example. Langur uses BAML for its prompting/LLM backend, so see https://docs.boundaryml.com/guide/baml-basics/switching-llms for more info on how to set up this configuration.
 
+## Running Challenges
+If you clone the repo, you can run the included challenges like so:
+```sh
+python ./challenges/challenge_runner.py <challenge_dir>
+# For example:
+python ./challenges/challenge_runner.py grader
+```
+These challenges are designed to test the abilities of the Langur system in various ways - many more will be added over time. If you have ideas for a challenge or use case you want to try, let me know!
+
 ## Known Issues
 - Does not properly support multiple connectors of the same type (will be implemented)
 - Behaviors cannot yet be arbitrarily combined, different combinations may not work as expected
@@ -210,3 +221,9 @@ In this example, we configured Langur to use OpenAI's `gpt-4o-mini`. You can use
 And much more! Langur aims to be the go-to library for easily building reliable LLM agents that actually have practical real-world use.
 
 If you have suggestions, let me know in the [Discord](https://discord.gg/wSBSP56V7U)!
+
+## Contact Me
+Please feel free to reach out if you have questions about Langur, are wondering about whether it can fit your use case, or anything else!
+
+- Email: anders@langur.ai
+- Langur Discord: https://discord.gg/wSBSP56V7U

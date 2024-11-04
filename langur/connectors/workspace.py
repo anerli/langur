@@ -1,4 +1,3 @@
-# Hypothetical ideal Workspace implementaiton
 import os
 import subprocess
 from fs.base import FS
