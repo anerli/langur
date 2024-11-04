@@ -109,6 +109,8 @@ agent.use(
     Terminal().disable("input")
 )
 agent.run()
+
+>>> [OUTPUT] 299615604624
 ```
 
 If you're familiar with existing LLM paradigms, the connector actions are generally similar to the concept of tools. However, connectors provide a convenient way to (1) package related actions together and (2) provides extra capabilities that aren't possible with the usual tool interface.
@@ -148,6 +150,28 @@ Why this approach?
 
 ## Customizing Behavior
 
+To customize agent behavior, pass AgentBehavior to the behavior kwarg when creating your agent instead of just passing in instructions: 
+
+```python
+from langur import Langur
+from langur.connectors import Terminal
+from langur.behavior import *
+
+agent = Langur(
+    behavior=AgentBehavior(
+        Assume(),
+        Plan(Task("Say Hi"), Task("Make a Meow")),
+        Execute()
+    )
+)
+agent.use(Terminal().disable("input"))
+agent.run()
+agent.save_graph_html("meow.html")
+```
+
+This example plans for two different tasks instead of one, and also includes an additional behavior `Assume` which isn't included by default. The `Assume` behavior make several assumptions about any provided tasks before planning actually starts, for example "verbal_output_required: The output should be a verbal/textual representation of a cat's meow sound".
+
+If you want to define completely new behaviors, that's also possible within the Langur framework. Currently it may be a bit tricky, so if you're interested in learning more about that, please reach out to me on the [Langur Discord](https://discord.gg/wSBSP56V7U).
 
 ## Known Issues
 - Does not properly support multiple connectors of the same type (will be implemented)
