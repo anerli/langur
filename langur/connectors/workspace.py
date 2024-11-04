@@ -31,6 +31,7 @@ class Workspace(Connector):
     path: str
 
     # By default, include read/write options but not code execution
+    # TODO: Improve high-level interface for defining default actions
     action_filter: ActionNodeRegistryFilter = Field(default_factory=lambda: ActionNodeRegistryFilter(
         disabled_tags=["exec"]
     ))

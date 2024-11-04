@@ -45,25 +45,13 @@ class Langur:
             Execute()
         )
 
-        #print(behavior)
-
-        # Default connector for one-off lambda peripherals
-        #self._default_connector = None
-
         workers = behavior.compile()
-        #print(workers)
         self.agent = Agent(workers=workers)
 
 
-    # def get_default_connector(self):
-    #     if self._default_connector is None:
-
-
-
-    def use(self, *peripherals: Worker | Connector | Callable | AgentBehavior | BaseBehavior):
+    def use(self, *peripherals: Connector | Worker | AgentBehavior | BaseBehavior):
         '''
         Provide a peripheral for the agent to use. You can provide:
-        - python function (or can @<agent>.use as decorator)
         - Connector - a configurable object with multiple actions
         - Behaviors - either composed AgentBehavior or an individual behavior - which will be added to existing behavior.
         - Worker - low-level cognitive worker
@@ -74,16 +62,6 @@ class Langur:
         for peripheral in peripherals:
             if isinstance(peripheral, Worker):
                 self.agent.add_worker(peripheral)
-            elif isinstance(peripheral, Callable):
-                schema = schema_from_function(peripheral)
-                # One-off connector
-                conn = Connector(connector_name=schema.name)
-                conn.action(peripheral)
-                self.use(conn)
-            # elif isinstance(peripheral, Connector):
-            #     worker_type = peripheral.to_worker_type()
-            #     print("adding worker of type:", worker_type)
-            #     self.agent.add_worker(worker_type())
             elif isinstance(peripheral, BaseBehavior):
                 # Create one-off agent behavior to compile into workers
                 agent_behavior = AgentBehavior(
