@@ -1,13 +1,15 @@
 
 from dataclasses import dataclass
 import inspect
-from typing import Annotated, Any, Callable, Dict, Optional, get_args, get_origin
+from typing import Annotated, Any, Callable, Dict, Optional, Type, get_args, get_origin
 import typing
 
 from pydantic import Field, PydanticSchemaGenerationError, TypeAdapter
 from pydantic.fields import FieldInfo
 
 from langur.actions import ActionContext
+from langur.baml_client.type_builder import TypeBuilder, FieldType
+from langur.util.baml_type_converter import get_type_base
 
 
 @dataclass
@@ -15,8 +17,14 @@ class SchemaResult:
     name: str
     description: str
     json_schema: dict
-    fields_dict: Dict[str, tuple[Any, FieldInfo]]
+    fields_dict: Dict[str, tuple[Type, FieldInfo]]
+    baml_types: Dict[str, FieldType]
     is_async: bool
+
+# def get_baml_type(typ: Type):
+#     # Get corresponding BAML TypeBuilder type based on a Python type.
+
+
 
 def schema_from_function(fn: Callable) -> SchemaResult:
     """
@@ -126,11 +134,25 @@ def schema_from_function(fn: Callable) -> SchemaResult:
     if not description:
         print(f"WARNING: Action `{name}` has no description and may not perform well, give functions a doc comment description to define them for the agent.")
         description = "(No description provided)"
-   
+    
+    
+    #print(json_schema)
+    #baml_types = {k: get_baml_type(v[0]) for k, v in fields_dict.items() if k != "ctx" and k != "self"}
+
+    # TODO: Should maybe just be one FieldType to captured top-level required properly?
+    # Ideally should not be going Python -> JSON Schema -> BAML FieldType anyway, and do Python -> BAML FieldType instead.
+    tb = TypeBuilder()
+    baml_types = {k: get_type_base(v, tb) for k, v in json_schema["properties"].items()}
+    #baml_types = get_type_base(json_schema, tb)
+    #baml_types = {}
+
+    #print("baml_types:", baml_types)
+
     return SchemaResult(
         name=name,
         description=description,
         json_schema=json_schema,
         fields_dict=fields_dict,
+        baml_types=baml_types,
         is_async=is_async
     )

@@ -29,8 +29,8 @@ def action(
     tags = tags if tags else []
     def _register_model(func: Callable[[Any], Any]):
         schema = schema_from_function(func)
-        #print(schema.json_schema)
-        #print(schema.fields_dict)
+        #print(f"{schema.name} json_schema:", schema.json_schema)
+        #print(f"{schema.name} fields:", schema.fields_dict)
         
         if "ctx" in schema.fields_dict and "ctx" not in schema.json_schema["properties"]:
             if schema.is_async:
@@ -70,7 +70,8 @@ def action(
             schema.name,
             {
                 "definition": (ClassVar[str], schema.description),
-                "input_schema": (ClassVar[dict[str, Any]], schema.json_schema["properties"])
+                #"input_schema": (ClassVar[dict[str, Any]], schema.json_schema["properties"])#TODO
+                "input_schema": (ClassVar[dict[str, Any]], schema.baml_types)
             },
             func_dict,
             ActionNode

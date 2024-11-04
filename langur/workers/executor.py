@@ -49,7 +49,7 @@ class ExecutorWorker(Worker):
         # for now all params assumed to be strings
         # TODO: use actual defined param types, and add param descriptions if specified in action def
         for param_name in empty_params:
-            tb.FilledParams.add_property(param_name, tb.string())
+            tb.FilledParams.add_property(param_name, action_node.input_schema[param_name])
 
         params = await baml.b.FillParams(
             context=context,
@@ -115,8 +115,12 @@ class ExecutorWorker(Worker):
         # Build context
         self.build_context(action_node, action_ctx)
 
+        #print("PREFILL:", action_node.inputs)
+
         # If missing params, need to dynamically fill
         await self.fill_params(action_node, action_ctx.ctx)
+
+        #print("POSTFILL:", action_node.inputs)
 
         #print("Context:", context)
         #print("ok executing FR:", action_ctx)
@@ -124,7 +128,7 @@ class ExecutorWorker(Worker):
             action_ctx
         )
         # Make sure not to put in None, else it will count as un-executed and run infinitely
-        action_node.output = output if output else ""
+        action_node.output = str(output) if output else ""
         return output
 
     async def execute_frontier(self):

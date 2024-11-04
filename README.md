@@ -86,6 +86,57 @@ If this plan/execute behavior just doesn't work for your agent use case, another
 
 ## Building Connectors
 
+Here's a simple example demonstrating how to build a custom connector:
+
+```python
+from langur import Langur, Connector, action
+from langur.connectors import Terminal
+
+class Calculator(Connector):
+    @action
+    def add(self, x: int, y: int):
+        '''Add two numbers'''
+        return x + y
+
+    @action
+    def multiply(self, x: int, y: int):
+        '''Multiply two numbers'''
+        return x * y
+
+agent = Langur("What is (1494242 + 12482489284) * 24?")
+agent.use(
+    Calculator(),
+    Terminal().disable("input")
+)
+agent.run()
+```
+
+If you're familiar with existing LLM paradigms, the connector actions are generally similar to the concept of tools. However, connectors provide a convenient way to (1) package related actions together and (2) provides extra capabilities that aren't possible with the usual tool interface.
+
+For example, if we want an action that actually makes another LLM call, we would want to have context about what's actually going on. Here's an example, the built-in LLM connector which allows the agent to do natural language processing as an action:
+
+```python
+from langur.actions import ActionContext
+from langur.connector import Connector, action
+import langur.baml_client as baml
+
+class LLM(Connector):
+    @action
+    async def think(self, ctx: ActionContext) -> str:
+        '''Do purely cognitive processing'''
+        return await baml.b.Think(
+            context=ctx.ctx,
+            description=ctx.purpose,
+            baml_options={"client_registry": ctx.cg.get_client_registry()}
+        )
+```
+> [BAML](https://github.com/BoundaryML/baml) is being used here to handle the prompting backend
+
+The parameter `ctx: ActionContext` is a special parameter that includes information relevant to the action being executed. The LLM is unaware of this parameter - it is automatically injected if found in the signature of an action function definition.
+- `ctx.purpose` contains a short natural language description of the specific purpose of a particular action use.
+- `ctx.ctx` is any prompting context normally used to construct inputs for an action, but you can hook into it and use it as well. Print it out to see a bit of what's going on under the hood!
+
+
 ## How it Works
 Langur's behavior is driven entirely by various "metacognitive workers" operating on a shared "cognition graph". These workers might manipulate the graph itself, or they might be interacting with the real-world and relaying that information to the graph. Workers that interact with the real-world are also called [Connectors](#building-connectors), and Langur is designed to make these [Connectors](#building-connectors) easy to implement to define new modes of interaction with the world.
 
@@ -106,5 +157,10 @@ Why this approach?
 - [ ] Docs
 - [ ] CLI Tool
 - [ ] Improved agent behavior debugger / graph visualizer
+- [ ] Adapter for langchain tools
+- [ ] More native connectors
+- [ ] Continuously improve agent behavior
+
+And much more! Langur aims to be the go-to library for easily building reliable LLM agents that actually have practical real-world use.
 
 If you have suggestions, let me know in the [Discord](https://discord.gg/wSBSP56V7U)!

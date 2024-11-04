@@ -68,7 +68,7 @@ class PlannerWorker(Worker):
             #action_node_types.extend(worker.get_action_node_types())
     
         tb = TypeBuilder()
-        action_input_schemas = []
+        action_input_schemas = []#TODO
         # Dynamically build action input types
         for action_type_name, action_node_type in action_node_types.items():
             #action_def_name = action_def_node.id
@@ -78,15 +78,15 @@ class PlannerWorker(Worker):
             builder.add_property("type", tb.literal_string(action_type_name))
             
             # TODO: Actually use JSON schema values - for now just assuming strings
-            params = action_node_type.input_schema.keys()
+            #params = action_node_type.input_schema.keys()
 
-            for param in params:
+            for param, ft in action_node_type.input_schema.items():
                 # use field type from action def but make optional (any problems if double applied?)
                 # TODO: hardcoded to str and no desc - add back when BAML supports dynamic types from JSON
                 # property_builder = builder.add_property(param.param_key, param.field_type.optional())
                 # if param.description:
                 #     property_builder.description(param.description)
-                builder.add_property(param, tb.string().optional())
+                builder.add_property(param, ft.optional())#tb.string().optional())
             action_input_schemas.append(builder.type())
 
         tb.ActionNode.add_property("action_input", tb.union(action_input_schemas)).description("Provide inputs if known else null. Do not hallicinate values.")

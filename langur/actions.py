@@ -39,7 +39,9 @@ class ActionContext:
 class ActionNode(Node):
     definition: ClassVar[str]
     # TODO: input schema values are currently ignored, assumed to be strings
-    input_schema: ClassVar[dict[str, Any]]
+    #input_schema: ClassVar[dict[str, Any]]#TODO
+    # Should maybe just be one FieldType to captured required properly?
+    input_schema: ClassVar[dict[str, FieldType]]
 
     tags: ClassVar[list[str]] = ["action"]
 
