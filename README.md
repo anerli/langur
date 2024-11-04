@@ -4,10 +4,15 @@ Langur makes it simple to build consistent, observable, and portable LLM agents.
 
 > ⚠️ Langur is early in development. Expect frequent breaking changes. Depending on how it's configured Langur may be able to access arbitrary files or run code - use at your own risk.
 
-## Installation
+## Setup
+
+Install:
 ```
 pip install langur
 ```
+
+Langur uses Anthropic by default, and it's recommended you use Anthropic models for the best results. If you want though, you can [easily swap the LLM backend](#configuring-llm). Otherwise, setup your anthropic key `ANTHROPIC_API_KEY` before proceeding!
+
 
 ## Resources
 
@@ -172,6 +177,23 @@ agent.save_graph_html("meow.html")
 This example plans for two different tasks instead of one, and also includes an additional behavior `Assume` which isn't included by default. The `Assume` behavior make several assumptions about any provided tasks before planning actually starts, for example "verbal_output_required: The output should be a verbal/textual representation of a cat's meow sound".
 
 If you want to define completely new behaviors, that's also possible within the Langur framework. Currently it may be a bit tricky, so if you're interested in learning more about that, please reach out to me on the [Langur Discord](https://discord.gg/wSBSP56V7U).
+
+
+## Configuring LLM
+
+Langur is tested and developed with Anthropic models (Claude Sonnet 3.5), as they have shown to be the most effective (in my experience, by quite a lot) for consistent results for agent planning and execution. Therefore it is recommended you use the default Anthropic LLM configuration. However, you can customize the LLM used by the agent by passing an LLMConfig to your agent:
+```python
+from langur.llm import LLMConfig
+
+agent = Langur(
+    "Say hi",
+    llm_config=LLMConfig(
+        provider="openai",
+        options={"model": "gpt-4o-mini"}
+    )
+)
+```
+In this example, we configured Langur to use OpenAI's `gpt-4o-mini`. You can use open source LLMs by using Ollama / vLLM providers for example. Langur uses BAML for its prompting/LLM backend, so see https://docs.boundaryml.com/guide/baml-basics/switching-llms for more info on how to set up this configuration.
 
 ## Known Issues
 - Does not properly support multiple connectors of the same type (will be implemented)

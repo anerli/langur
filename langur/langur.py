@@ -9,6 +9,7 @@ from langur.behavior import AgentBehavior, BaseBehavior, Task, Plan, Execute
 from langur.agent import Agent
 from langur.connector import Connector
 from langur.connector import Connector
+from langur.llm import LLMConfig
 from langur.util.schema import schema_from_function
 from langur.workers.worker import Worker
 
@@ -16,7 +17,7 @@ from langur.workers.worker import Worker
 
 
 class Langur:
-    def __init__(self, instructions: str = None, behavior: AgentBehavior = None, agent: Agent=None):
+    def __init__(self, instructions: str = None, behavior: AgentBehavior = None, agent: Agent=None, llm_config: LLMConfig = None):
         '''
         High level agent interface with customizable behavior.
         Provide either instructions OR behavior.
@@ -46,7 +47,7 @@ class Langur:
         )
 
         workers = behavior.compile()
-        self.agent = Agent(workers=workers)
+        self.agent = Agent(workers=workers, llm_config=llm_config)
 
 
     def use(self, *peripherals: Connector | Worker | AgentBehavior | BaseBehavior):
