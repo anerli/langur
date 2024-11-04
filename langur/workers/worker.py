@@ -82,3 +82,7 @@ class Worker(BaseModel, ABC):
         data_no_worker_type = data.copy()
         del data_no_worker_type["worker_type"]
         return worker_class.model_validate(data_no_worker_type)
+
+    def log(self, *args, **kwargs):
+        print(f"[{self.__class__.__name__}::{self.id}] ", end="")
+        print(*args, **kwargs)

@@ -16,7 +16,7 @@ class ExecutorWorker(Worker):
         '''
         action_nodes = self.cg.query_nodes_by_type(ActionNode)
 
-        print("action nodes:", action_nodes)
+        #print("action nodes:", action_nodes)
 
         # Naive linear impl
         frontier = set()
@@ -35,7 +35,7 @@ class ExecutorWorker(Worker):
                         break
             if valid:
                 frontier.add(node)
-        
+
         return frontier
 
     async def fill_params(self, action_node: ActionNode, context: str):
@@ -98,7 +98,7 @@ class ExecutorWorker(Worker):
         #return context
 
     async def execute_node(self, action_node: ActionNode) -> str:
-        print("Executing node:", action_node)
+        #print("Executing node:", action_node)
         # Find corresponding definition node
         # action_definition_nodes = list(filter(lambda node: "action_definition" in node.get_tags(), action_node.upstream_nodes()))
         # if len(action_definition_nodes) != 1:
@@ -108,7 +108,8 @@ class ExecutorWorker(Worker):
         action_ctx = ActionContext(
             cg=self.cg,
             conn=self.cg.query_worker_by_id(action_node.connector_id),
-            ctx=""
+            ctx="",
+            purpose=action_node.purpose
         )
 
         # Build context
@@ -118,7 +119,7 @@ class ExecutorWorker(Worker):
         await self.fill_params(action_node, action_ctx.ctx)
 
         #print("Context:", context)
-        print("ok executing FR:", action_ctx)
+        #print("ok executing FR:", action_ctx)
         output = await action_node.execute(
             action_ctx
         )
@@ -130,18 +131,25 @@ class ExecutorWorker(Worker):
         #action_nodes = graph.query_nodes_by_tag("action")
         frontier = self.get_frontier()
 
-        print("Frontier:", frontier)
-        
+        # Status update
+        all_action_nodes = self.cg.query_nodes_by_type(ActionNode)
+        completed_action_nodes = list(filter(lambda n: n.output is not None, all_action_nodes))
+        self.log(f"{len(completed_action_nodes)}/{len(all_action_nodes)} actions executed")
 
+        #print("Frontier:", frontier)
         await asyncio.gather(*[self.execute_node(node) for node in frontier])
 
         is_done = len(self.get_frontier()) == 0
         #print("is done?", )
         if is_done:
+            self.log("Done executing actions")
             self.state = STATE_DONE
     
     async def cycle(self):
         # TODO super hacky, only works with exactly one executor and planner
         #if self.state == "WAITING" and len(self.cg.get_workers_with_state("WAITING")) == 1:
         if self.state == "WAITING" and self.cg.worker_count(worker_type="PlannerWorker", state=STATE_DONE) == self.cg.worker_count(worker_type="PlannerWorker"):
+            self.state = "EXECUTING"
+            self.log("Beginning action execution")
+        if self.state == "EXECUTING":
             await self.execute_frontier()

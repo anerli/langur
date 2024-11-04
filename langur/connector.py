@@ -140,7 +140,7 @@ class Connector(Worker, ABC):
     Generic Connector. Can subclass to implement own
     '''
     #action_node_types: ClassVar[list[Type[ActionNode]]]
-    action_node_type_filter: ActionNodeRegistryFilter = Field(default_factory=ActionNodeRegistryFilter)
+    action_filter: ActionNodeRegistryFilter = Field(default_factory=ActionNodeRegistryFilter)
 
     def overview(self) -> str | None:
         '''
@@ -187,13 +187,21 @@ class Connector(Worker, ABC):
     #         #     self.action_node_type_filter.tags = set()
     #         # self.action_node_type_filter.tags = self.action_node_type_filter.tags.union(tags)
 
-    def enable(self, names: List[str] = None, tags: List[str] = None):
-        '''Make actions with certain names or tags available to the agent.'''
-        self.action_node_type_filter.enable_actions(names=names, tags=tags)
+    def enable(self, *tags: str, names: List[str] = None):
+        '''
+        Make actions with certain names or tags available to the agent.
+        Mutates the connector but returns self for convenient chaining.
+        '''
+        self.action_filter.enable_actions(names=names, tags=tags)
+        return self
 
-    def disable(self, names: List[str] = None, tags: List[str] = None):
-        '''Make actions with certain names or tags unavailable to the agent.'''
-        self.action_node_type_filter.disable_actions(names=names, tags=tags)
+    def disable(self, *tags: str, names: List[str] = None):
+        '''
+        Make actions with certain names or tags unavailable to the agent.
+        Mutates the connector but returns self for convenient chaining.
+        '''
+        self.action_filter.disable_actions(names=names, tags=tags)
+        return self
     
     def list_actions(self) -> List[str]:
         return [typ.action_type_name() for typ in self.get_action_node_types()]
@@ -201,5 +209,5 @@ class Connector(Worker, ABC):
     def get_action_node_types(self) -> List[Type['ActionNode']]:
         return action_node_type_registry.get_action_node_types(
             self.__class__.__name__,
-            self.action_node_type_filter
+            self.action_filter
         )

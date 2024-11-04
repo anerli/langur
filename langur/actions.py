@@ -43,6 +43,7 @@ class ActionContext:
     cg: CognitionGraph
     conn: 'Connector'
     ctx: str
+    purpose: str
 
 class ActionNode(Node):
     definition: ClassVar[str]

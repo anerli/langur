@@ -1,20 +1,39 @@
 # Hypothetical ideal Workspace implementaiton
 import os
+import subprocess
 from fs.base import FS
 from fs.memoryfs import MemoryFS
 from fs.osfs import OSFS
 from fs.walk import Walker
+from pydantic import Field
 
 from langur.actions import ActionContext
 from langur.connector import Connector, action
+from langur.util.registries import ActionNodeRegistryFilter
+
+def run_python_script(file_path):
+    try:
+        result = subprocess.run(
+            ["python", file_path],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout, result.stderr
+    except subprocess.CalledProcessError as e:
+        return e.stdout, e.stderr
 
 
-# Ideal Workpace Implementation
 class Workspace(Connector):
     '''
     path: Path to workspace directory.
     '''
     path: str
+
+    # By default, include read/write options but not code execution
+    action_filter: ActionNodeRegistryFilter = Field(default_factory=lambda: ActionNodeRegistryFilter(
+        disabled_tags=["exec"]
+    ))
 
     # Inherited available properties: cg
 
@@ -58,9 +77,14 @@ class Workspace(Connector):
             f.write(new_content)
         return f"I overwrote {file_path}, it now contains:\n```\n{new_content}\n```"
 
+    @action(tags=["exec"])
+    def run_python_file(self, file_path: str):
+        base_path = os.path.abspath(self.path)
+        script_path = os.path.abspath(os.path.join(self.path, file_path))
 
+        # Ensure the resolved path is within the base directory
+        if not script_path.startswith(base_path):
+            raise ValueError("Access to files outside workspace directory is not allowed")
 
-
-
-# Usage
-workspace = Workspace(path="./workspace")
+        stdout, stderr = run_python_script(script_path)
+        return f"I ran the script {file_path}.\nstdout:\n```\n{stdout}\n```\nstderr:\n```\n{stderr}\n```"

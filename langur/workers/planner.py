@@ -23,7 +23,9 @@ class PlannerWorker(Worker):
         # could in theory cause non-deterministic number of cycles this happens async with others?
         # May happen on cycle 1 or 2 dependending on whether other workers execute first - either way it works - but maybe this is a bit odd.
         if self.state == "WAITING" and self.cg.worker_count(state=STATE_SETUP) == 0:
+            self.log(f"Creating plan for task \"{self.cg.query_node_by_id(self.task_node_id).task}\"")
             await self.plan_task()
+            self.log("Done creating plan")
             self.state = STATE_DONE
 
     def derive_connector(self, node_data: BAMLActionNode) -> Connector:
@@ -100,8 +102,8 @@ class PlannerWorker(Worker):
         # Build action use nodes
         nodes = []
         for node_data in resp.nodes:
-            print("action_node_types:", action_node_types)
-            print("node_data:", node_data)
+            #print("action_node_types:", action_node_types)
+            #print("node_data:", node_data)
             action_node_type = action_node_types[node_data.action_input["type"]]
             #nodes.append(ActionUseNode(item.id, item.action_input))
 

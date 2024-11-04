@@ -41,7 +41,7 @@ class CognitionGraph:
         #     worker.cg = self
 
         #self.cr = cr
-        print("llm_config", llm_config)
+        #print("llm_config", llm_config)
         self.llm_config = llm_config
 
         

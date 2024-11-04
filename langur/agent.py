@@ -45,15 +45,14 @@ class Agent:
         self.cg.add_worker(worker)
 
     async def run_until_done(self):
-
-        print("Workers:", self.workers)
+        #print("Workers:", self.workers)
         
         # could be helpful info to load/save cycle count instead of resetting if we loaded a prev agent, idk
         cycle_count = 0
         while not self.cg.are_workers_done():
             # a lil jank calling the graph thing here
             # would be cool to live update num done workers mid-cycle based on state changes - if workers were to use some hook to update state
-            print(f"[Cycle {cycle_count+1}]: {self.cg.worker_count(state=STATE_DONE)}/{self.cg.worker_count()} workers done")
+            #print(f"[Cycle {cycle_count+1}]: {self.cg.worker_count(state=STATE_DONE)}/{self.cg.worker_count()} workers done")
             await self.cycle()
             cycle_count += 1
         print("Agent done!")
