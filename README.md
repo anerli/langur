@@ -9,7 +9,13 @@ Langur makes it simple to build consistent, observable, and portable LLM agents.
 pip install langur
 ```
 
-## Example
+## Resources
+
+Docs: Coming soon
+
+Discord: https://discord.gg/wSBSP56V7U - Join the Discord to ask me any questions, report issues, or make suggestions!
+
+## Getting Started
 
 Here's a simple task solved using a Langur agent:
 ```python
@@ -28,29 +34,55 @@ The agent will:
 1. Plan out how to "Grade quizzes" based on what we told it to `.use()` (just `Workspace` in this case).
 2. Execute those actions
 
-But maybe instead of executing the plan right way, we might want to observe it first. We can do this by passing a signal name to the `until` keyword when running the agent.
+### Signals
+
+But maybe instead of executing the plan right way, we might want to observe it first. Instead of directly running `agent.run()`, we can pass a signal when running the agent:
 ```python
 from langur import Signal
 
 agent.run(until=Signal.PLAN_DONE)
 ```
-Then to observe the agent's plan, we can look at the corresponding behavioral graph. This can be done like so:
+
+### Visualization
+To observe the agent's plan, we can look at the corresponding behavioral graph. This can be done like so:
 ```python
-# In a Jupyter notebook
+agent.save_graph_html("agent.html")
+# ^ and then open the html with your browser.
+# Or, in a Jupyter notebook:
 agent.show()
 ```
-or
-```python
-# Outside of a Jupyter notebook
-agent.save_graph_html("agent.html")
-```
-> This system for viewing the agent behavior graph is temporary and will be improved.
-
 For this simple example, the behavior graph might look something like:
 
 ![](static/grading_graph.png)
 
-But maybe this plan/execute behavior just doesn't work for your agent use case! Well don't worry, another key tenet of Langur's design is to have **modular behavior**. Learn more in [Customizing Behavior](#customizing-behavior).
+Each node represents an action the agent plans to execute. 
+
+### Caching
+
+Let's say we like this behavior, and want to be able to re-use it - both to have consistent behavior and so the LLM doesn't have to plan out the same task again.
+
+To do this, we can save the entire agent behavior graph in whatever state it's in, and re-run it later!
+
+To save the agent behavior:
+```python
+agent.save("agent_with_great_plan.json")
+```
+then later, wherever and whenever you want:
+```python
+agent = Langur.load("agent_with_great_plan.json")
+```
+
+You could then continue the agent's execution from this point, where it has the plan you like in its behavioral state, by just running `agent.run()` once loaded.
+
+Since this agent representation is plain JSON, you can even send agents over the wire, store them in a database, or do whatever you like really! They are completely portable and can be run on any system with Python and Langur installed.
+
+### Going Further
+
+Currently there is no documentation, however you can check out more examples by checking out the [challenges](./challenges) - which are different tasks meant to evaluate Langur's abilities in various capacities. You can also ask any questions you have in the [Langur Discord](https://discord.gg/wSBSP56V7U).
+
+Langur provides some connectors in the library under `langur.connectors` - for example `Workspace` is a filesystem with basic read/write operations, or optional code execution features. Currently the connectors provided are extremely basic, these will grow over time. However Langur also makes it easy to define custom connectors, see [Building Connectors](#building-connectors).
+
+If this plan/execute behavior just doesn't work for your agent use case, another key tenet of Langur's design is to have **modular behavior** - so you can customize it to fit your needs. Learn more in [Customizing Behavior](#customizing-behavior).
 
 ## Building Connectors
 
