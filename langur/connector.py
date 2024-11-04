@@ -25,12 +25,12 @@ def action(
     - The fields of this function need to match the fields of the action, except each needs a None default!
     - Should return a str which serves as context for the LLM when deciding on inputs for the action.
     """
-    print("tags:", tags)
+    #print("tags:", tags)
     tags = tags if tags else []
     def _register_model(func: Callable[[Any], Any]):
         schema = schema_from_function(func)
-        print(schema.json_schema)
-        print(schema.fields_dict)
+        #print(schema.json_schema)
+        #print(schema.fields_dict)
         
         if "ctx" in schema.fields_dict and "ctx" not in schema.json_schema["properties"]:
             if schema.is_async:

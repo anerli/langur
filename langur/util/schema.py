@@ -124,7 +124,7 @@ def schema_from_function(fn: Callable) -> SchemaResult:
             description += f"\n\nReturn value schema: {return_schema}"
    
     if not description:
-        print("WARNING: Actions without descriptions may not perform well, give functions a doc comment description to define them for the agent.")
+        print(f"WARNING: Action `{name}` has no description and may not perform well, give functions a doc comment description to define them for the agent.")
         description = "(No description provided)"
    
     return SchemaResult(

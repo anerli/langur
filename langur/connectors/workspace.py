@@ -74,12 +74,14 @@ class Workspace(Connector):
 
     @action(tags=["write"], extra_context=write_file_extra_context)
     def write_file(self, file_path: str, new_content: str):
+        '''Overwrite a file's contents.'''
         with self.get_fs().open(file_path, "w") as f:
             f.write(new_content)
         return f"I overwrote {file_path}, it now contains:\n```\n{new_content}\n```"
 
     @action(tags=["exec"])
     def run_python_file(self, file_path: str):
+        '''Execute a python script and observe the stdout.'''
         base_path = os.path.abspath(self.path)
         script_path = os.path.abspath(os.path.join(self.path, file_path))
 

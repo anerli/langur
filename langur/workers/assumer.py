@@ -18,14 +18,14 @@ class AssumptionWorker(Worker):
     state: str = "WAITING_FOR_TASKS"
 
     async def create_assumptions(self, task_node: TaskNode):
-        print("CREATING ASSUMPTION FOR:", task_node)
+        #print("CREATING ASSUMPTION FOR:", task_node)
         result = await baml.b.CreateAssumptions(
             task=task_node.task,
             # TODO: maybe create a util on CG for this common observable context pattern
             observables="\n".join([node.observe() for node in self.cg.query_nodes_by_tag("observable")]),
             baml_options={"client_registry": self.cg.get_client_registry()}
         )
-        print(result)
+        #print(result)
         for assumption in result:
             self.cg.add_node(
                 Assumption(id=assumption.assumption_id, assumption=assumption.assumption)

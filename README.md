@@ -101,3 +101,10 @@ Why this approach?
 ## Known Issues
 - Does not properly support multiple connectors of the same type (will be implemented)
 - Behaviors cannot yet be arbitrarily combined, different combinations may not work as expected
+
+## Roadmap
+- [ ] Docs
+- [ ] CLI Tool
+- [ ] Improved agent behavior debugger / graph visualizer
+
+If you have suggestions, let me know in the [Discord](https://discord.gg/wSBSP56V7U)!
