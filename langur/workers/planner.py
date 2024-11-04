@@ -2,6 +2,7 @@ from langur.actions import ActionNode
 from langur.baml_client.types import ActionNode as BAMLActionNode
 from langur.baml_client.type_builder import TypeBuilder
 from langur.graph.graph import CognitionGraph
+from langur.signals import Signal
 from langur.workers.worker import STATE_DONE, STATE_SETUP, Worker
 import langur.baml_client as baml
 from langur.util.registries import action_node_type_registry
@@ -27,6 +28,9 @@ class PlannerWorker(Worker):
             await self.plan_task()
             self.log("Done creating plan")
             self.state = STATE_DONE
+
+            # TODO: redesign events/signals
+            return Signal.PLAN_DONE
 
     def derive_connector(self, node_data: BAMLActionNode) -> Connector:
         '''

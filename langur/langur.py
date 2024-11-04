@@ -78,7 +78,7 @@ class Langur:
 
     def run(self, until: str = None):
         # TODO
-        asyncio.run(self.agent.run_until_done())
+        asyncio.run(self.agent.run(until=until))
     
     def show(self):
         return self.agent.cg.show()
@@ -86,6 +86,11 @@ class Langur:
     def save(self, path: str):
         with open(path, "w") as f:
             json.dump(self.agent.to_json(), f, indent=2)
+    
+    def save_graph_html(self, path: str):
+        self.agent.cg.save_graph_html(path=path)
+    
+    # def generate_viewer(self, path: str):
 
     @classmethod
     def load(cls, path: str) -> 'Langur':

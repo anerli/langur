@@ -55,10 +55,12 @@ class Worker(BaseModel, ABC):
     def __hash__(self):
         return hash((self.__class__.__name__, id(self)))
 
-    async def cycle(self):
+    async def cycle(self) -> str | None:
         '''
         Do one cycle with this worker; the implementation will vary widely depending on the worker's purpose.
         Each cycle should be finite, though potentially cycles could be executed indefinitely.
+
+        Optionally returns a string representing a signal, which can be used from high level - this will probably change.
         '''
         pass
     

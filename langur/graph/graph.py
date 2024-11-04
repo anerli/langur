@@ -188,6 +188,14 @@ class CognitionGraph:
     def show(self):
         return Sigma(
             self.to_networkx(),
+            **self._sigma_params()
+        )
+
+    def save_graph_html(self, path: str):
+        Sigma.write_html(self.to_networkx(), path, fullscreen=True, **self._sigma_params())
+    
+    def _sigma_params(self):
+        return dict(
             edge_size_range=(3, 5),
             node_size_range=(10, 16),
             start_layout=2,

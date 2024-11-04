@@ -44,7 +44,7 @@ class Agent:
         self.workers.append(worker)
         self.cg.add_worker(worker)
 
-    async def run_until_done(self):
+    async def run(self, until: str):
         #print("Workers:", self.workers)
         
         # could be helpful info to load/save cycle count instead of resetting if we loaded a prev agent, idk
@@ -53,18 +53,23 @@ class Agent:
             # a lil jank calling the graph thing here
             # would be cool to live update num done workers mid-cycle based on state changes - if workers were to use some hook to update state
             #print(f"[Cycle {cycle_count+1}]: {self.cg.worker_count(state=STATE_DONE)}/{self.cg.worker_count()} workers done")
-            await self.cycle()
+            signals = await self.cycle()
+            if until in signals:
+                break
             cycle_count += 1
-        print("Agent done!")
+        #print("Agent done!")
 
-    async def cycle(self):#, cycles=1):
+    async def cycle(self) -> list[str]:#, cycles=1):
         #workers: list[Worker] = [DependencyDecomposer(), IntermediateProductBuilder(), IntermediateProductBuilder()]
         #for _ in range(cycles):
         jobs = []
         for worker in self.workers:
             jobs.append(worker.cycle())
         # naive async implementation, don't need to necessarily block gather here
-        await asyncio.gather(*jobs)
+        results = await asyncio.gather(*jobs)
+        # return signals
+        # TODO: redesign
+        return [r for r in results if r is not None]
 
     def to_json(self) -> dict:
         return {

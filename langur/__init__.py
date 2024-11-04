@@ -4,3 +4,4 @@ nest_asyncio.apply()
 
 from .langur import Langur
 from .connector import Connector, action
+from .signals import Signal
