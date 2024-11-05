@@ -4,17 +4,12 @@ High level agent interface.
 
 import asyncio
 import json
-from typing import Callable
-from langur.behavior import AgentBehavior, BaseBehavior, Task, Plan, Execute
+from langur.behavior import AgentBehavior, BaseBehavior, Plan, Task, Execute
 from langur.agent import Agent
 from langur.connector import Connector
 from langur.connector import Connector
 from langur.llm import LLMConfig
-from langur.util.schema import schema_from_function
 from langur.workers.worker import Worker
-
-
-
 
 class Langur:
     def __init__(self, instructions: str = None, behavior: AgentBehavior = None, agent: Agent=None, llm_config: LLMConfig = None):

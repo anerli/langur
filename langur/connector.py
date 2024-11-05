@@ -136,27 +136,6 @@ class Connector(Worker, ABC):
         if self.state == STATE_SETUP:
             self.state = STATE_DONE
     
-    
-    
-    # def with_actions(self, names: List[str] = None, tags: List[str] = None):
-    #     '''
-    #     Filter the actions available to this connector.
-    #     With no filtering applied, all actions will be available.
-    #     If names are provided, only actions with function names matching those names will be provided.
-    #     If tags are provided, only actions with at least one of those tags are provided.
-    #     If both are provided, the actions must match both.
-    #     '''
-    #     if names is not None:
-    #         self.action_node_type_filter.names = set(names)
-    #         # if self.action_node_type_filter.names is None:
-    #         #     self.action_node_type_filter.names = set()
-    #         # self.action_node_type_filter.names = self.action_node_type_filter.names.union(names)
-    #     if tags is not None:
-    #         self.action_node_type_filter.tags = set(tags)
-    #         # if self.action_node_type_filter.tags is None:
-    #         #     self.action_node_type_filter.tags = set()
-    #         # self.action_node_type_filter.tags = self.action_node_type_filter.tags.union(tags)
-
     def enable(self, *tags: str, names: List[str] = None):
         '''
         Make actions with certain names or tags available to the agent.

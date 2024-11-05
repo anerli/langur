@@ -2,15 +2,8 @@
 
 import asyncio
 import json
-import os
-import pickle
-from typing import Any, Dict, Literal, Optional
-from baml_py import ClientRegistry
-from pydantic import BaseModel
-#from langur.connectors.connector import Connector
 from langur.llm import LLMConfig
-from langur.workers.worker import STATE_DONE, Worker
-#from langur.world import World
+from langur.workers.worker import Worker
 from langur.graph.graph import CognitionGraph
 
 # TODO: Combine with CognitionGraph
@@ -29,17 +22,9 @@ class Agent:
             }
         )
         
-        #self.world = World()
-        #self.goal = goal
         self.cg = cg if cg else CognitionGraph(workers=workers, llm_config=self.llm_config)
         self.workers = workers
         
-    
-    # def use(self, *connectors: Connector):
-    #     for connector in connectors:
-    #         self.world.register_connector(connector)
-    #     return self
-
     def add_worker(self, worker: Worker):
         self.workers.append(worker)
         self.cg.add_worker(worker)

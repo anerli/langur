@@ -1,6 +1,4 @@
-from typing import Annotated, List
-from dataclasses import dataclass
-from langur.util.schema import schema_from_function, SchemaResult
+from langur.util.schema import schema_from_function
 from langur.actions import ActionContext
 
 def test_simple_param_with_ctx():
