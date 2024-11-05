@@ -2,7 +2,6 @@
 from dataclasses import dataclass
 import inspect
 from typing import Annotated, Any, Callable, Dict, Optional, Type, get_args, get_origin
-import typing
 
 from pydantic import Field, PydanticSchemaGenerationError, TypeAdapter
 from pydantic.fields import FieldInfo

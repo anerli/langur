@@ -4,17 +4,12 @@ High level agent interface.
 
 import asyncio
 import json
-from typing import Callable
-from langur.behavior import AgentBehavior, BaseBehavior, Task, Plan, Execute
+from langur.behavior import AgentBehavior, BaseBehavior, Plan, Task, Execute
 from langur.agent import Agent
 from langur.connector import Connector
 from langur.connector import Connector
 from langur.llm import LLMConfig
-from langur.util.schema import schema_from_function
 from langur.workers.worker import Worker
-
-
-
 
 class Langur:
     def __init__(self, instructions: str = None, behavior: AgentBehavior = None, agent: Agent=None, llm_config: LLMConfig = None):
@@ -57,9 +52,6 @@ class Langur:
         - Behaviors - either composed AgentBehavior or an individual behavior - which will be added to existing behavior.
         - Worker - low-level cognitive worker
         '''
-        # Use provided connector or tool
-        # TODO: impl
-        # self.agent.use(...)
         for peripheral in peripherals:
             if isinstance(peripheral, Worker):
                 self.agent.add_worker(peripheral)
@@ -78,7 +70,6 @@ class Langur:
         
 
     def run(self, until: str = None):
-        # TODO
         asyncio.run(self.agent.run(until=until))
     
     def show(self):

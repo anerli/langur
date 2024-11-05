@@ -31,20 +31,11 @@ class CognitionGraph:
 
         self._worker_map: dict[str, 'Worker'] = {}
         self._worker_type_index: TypeIndex['Worker'] = TypeIndex()
-        
-        #self._workers = []
+
         for worker in workers:
             self.add_worker(worker)
-        # self.workers = workers
-        # # Give graph ref to workers
-        # for worker in workers:
-        #     worker.cg = self
 
-        #self.cr = cr
-        #print("llm_config", llm_config)
         self.llm_config = llm_config
-
-        
 
     def get_client_registry(self) -> ClientRegistry:
         return self.llm_config.to_registry()
@@ -211,27 +202,6 @@ class CognitionGraph:
         for edge in self.edges:
             s += f"{edge.src_node.id}->{edge.dest_node.id}\n"
         return s
-
-    # def build_context(self, *nodes: Node):
-    #     '''
-    #     filter_tags: Include only nodes with one of the provided tags
-    #     '''
-    #     nodes = nodes if nodes else self.get_nodes()
-
-    #     # TODO: Re-add filtering system
-    #     context = ""
-    #     # todo: decide order somehow
-    #     for node in nodes:
-    #         context += f"Node ID: {node.id}\n"
-    #         context += f"Node Edges:\n"
-    #         for edge in node.edges:
-    #             if node == edge.src_node:
-    #                 context += f"{node.id}->{edge.dest_node.id}\n"
-    #             else:
-    #                 context += f"{node.id}<-{edge.src_node.id}\n"
-    #         context += f"Node Content:\n{node.content()}"
-    #         context += "\n\n"
-    #     return context
 
     def to_json(self) -> dict:
         return {

@@ -1,13 +1,12 @@
 from langur.actions import ActionNode
 from langur.baml_client.types import ActionNode as BAMLActionNode
 from langur.baml_client.type_builder import TypeBuilder
-from langur.graph.graph import CognitionGraph
 from langur.signals import Signal
 from langur.workers.worker import STATE_DONE, STATE_SETUP, Worker
 import langur.baml_client as baml
 from langur.util.registries import action_node_type_registry
 
-from typing import TYPE_CHECKING, ClassVar, Type
+from typing import TYPE_CHECKING, Type
 
 from langur.connector import Connector
 

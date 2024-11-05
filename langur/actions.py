@@ -1,12 +1,9 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import dataclass
-import json
-from typing import Any, ClassVar, Generic, Optional, Set, TypeVar, Union
-
-from pydantic import Field
+from typing import ClassVar, Optional
 
 
-from langur.graph.edge import Edge
+
 from langur.graph.graph import CognitionGraph
 from langur.graph.node import Node
 from baml_py.type_builder import FieldType
@@ -15,19 +12,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from langur.connector import Connector
-
-
-# class ActionParameter:
-#     def __init__(self, param_key: str, field_type: FieldType, description: str | None = None):
-#         self.param_key = param_key
-#         self.field_type = field_type
-#         self.description = description
-    
-#     def __str__(self):
-#         if self.description:
-#             return f"{self.param_key}: {self.description}"
-#         else:
-#             return f"{self.param_key}"
 
 @dataclass
 class ActionContext:
@@ -68,14 +52,3 @@ class ActionNode(Node):
     @abstractmethod
     async def execute(self, ctx: ActionContext) -> str:
         pass
-    
-    # def __init__(self, id: str, params: dict):#, thoughts: str):
-    #     '''params: empty, partial, or full input dict'''
-    #     super().__init__(id=id, params=params)
-    #     #self.params = params
-    #     #self.thoughts = thoughts
-    
-    # def content(self):
-    #     formatted_inputs = json.dumps(self.params)
-    #     return f"Action Use ID: {self.id}\nAction Inputs:\n{formatted_inputs}"
-
