@@ -1,5 +1,7 @@
 ![](static/header.png)
 
+# Langur
+
 Langur makes it simple to build consistent, observable, and portable LLM agents.
 
 > ⚠️ Langur is early in development. Expect frequent breaking changes. Depending on how it's configured Langur may be able to access arbitrary files or run code - use at your own risk.
