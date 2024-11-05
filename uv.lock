@@ -46,16 +46,16 @@ wheels = [
 
 [[package]]
 name = "baml-py"
-version = "0.65.0"
+version = "0.66.0"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/56/6f/b549e066cb936a44f76744586ef43d80d416437929322f2090a5fae65473/baml_py-0.65.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:8ffcac08076f78743c7d3111bb0ab821cf37bd2d8b94affe765b789b7295ac4e", size = 9233034 },
-    { url = "https://files.pythonhosted.org/packages/34/f5/be3462d15b752c3061a3031314f7a6194fef37b21afce3a4356d94a7962b/baml_py-0.65.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:dc88f7b2fac60663b2e795a4b54ba57195b982ca7fb16ef1db1ab9f4683382bd", size = 8690438 },
-    { url = "https://files.pythonhosted.org/packages/c5/21/b75c923ea4f8d48d4bbb76065e61515eb78625fbfd6a99404db6c7612a89/baml_py-0.65.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2d029b48b30c8ec268cd71c93c5c566d6bbbb356fdc7505f01fe905092398b79", size = 11684174 },
-    { url = "https://files.pythonhosted.org/packages/7e/f4/1381ed8f12134096e55b469b6fe69eec1b968aaab993d100383a269e9a66/baml_py-0.65.0-cp38-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:5c7ac76d183389bfae9f50b38dd2ee5526f2639a5bef71be5a4cc75a3b40ce5c", size = 11480056 },
-    { url = "https://files.pythonhosted.org/packages/10/31/68e28647d9e45011976021fb818f3f483ff69cac2cb2fdbbb6695f10f744/baml_py-0.65.0-cp38-abi3-musllinux_1_1_aarch64.whl", hash = "sha256:297f44c17f815e5abb240f763eaa84f2624a7b8bc2785c32f7ea82d99dfef4e2", size = 11914327 },
-    { url = "https://files.pythonhosted.org/packages/45/8d/515bcd4190cadcdfe9cd79ca73cd7a3af20ee738a2784bd6ca11dba5dc72/baml_py-0.65.0-cp38-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:ad45eb528143ffe77d8ee48dd5e9606cd87dbdd3690a4bd956a65ccdc11e5982", size = 11624745 },
-    { url = "https://files.pythonhosted.org/packages/87/c7/16ded7a80c3d181a2a99455109f8007d9c1a7685769356919df7cb2bcb06/baml_py-0.65.0-cp38-abi3-win_amd64.whl", hash = "sha256:e7fa4a4958566d28f5337e23a7c7a5235c4f14e6cd36b87272971951423faa50", size = 9450004 },
+    { url = "https://files.pythonhosted.org/packages/7b/35/fb47f6b3c8817fd4d48d45d1b751120a3362dc4be4fd3a2b8fe08b3800f8/baml_py-0.66.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:66f601096865709147ab97aa305e0893e6f0b5e576f8f9bd0680acd412e81a61", size = 9877011 },
+    { url = "https://files.pythonhosted.org/packages/c5/e8/ba03dfd2d9b58b04e0302d1460d25a15971ec67d53f89c53401b27f8a21a/baml_py-0.66.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:bce634fd80b4b1c2492bc1c9b5648c63c944d619919b3199e44fb32c6c6d3ba0", size = 9216395 },
+    { url = "https://files.pythonhosted.org/packages/98/55/0e42fd159ac9546443a20feef9a58f1ba3d511bfcbdad095254dded9b1b5/baml_py-0.66.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a62591a789d0bf134e1b6894943231705d69b8d16b16a13d30bcfb947dd00042", size = 12339388 },
+    { url = "https://files.pythonhosted.org/packages/12/d1/6bb2efde338c7153f7043bb923f62646396693588ae19093da0e7b0adfe3/baml_py-0.66.0-cp38-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:cec4d622025e9a153432106c371739626f1e7bc35d6c3f732f705e03c61e53e4", size = 12114254 },
+    { url = "https://files.pythonhosted.org/packages/d6/22/96cebbe7990cd50bff7a840fdf6ec06308f92721e2924cb6f9235e145e81/baml_py-0.66.0-cp38-abi3-musllinux_1_1_aarch64.whl", hash = "sha256:ce7a1df32cb40e27049f94292718af6b6fdd82738ac7450c9fb5d05889010cdf", size = 12522915 },
+    { url = "https://files.pythonhosted.org/packages/9a/60/be0f31a4d6f26c1d7bf637cf684b652a38f0be403d6e20ebdb15df3e1a4d/baml_py-0.66.0-cp38-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:ce438442adf88c8cfc90fd6a513ea8404af9aa4a5561ddd3937f2972414bf0eb", size = 12279414 },
+    { url = "https://files.pythonhosted.org/packages/c7/08/7d4097f3b64b116aeaca5cbf81e9f794f66f9c2b3e8f567d4b9741100cf2/baml_py-0.66.0-cp38-abi3-win_amd64.whl", hash = "sha256:4d7f2c974603f473f0055686753a6a452fa3138f30b30addd6537bdddf846168", size = 10091411 },
 ]
 
 [[package]]
@@ -312,8 +312,8 @@ wheels = [
 
 [[package]]
 name = "langur"
-version = "0.1.0"
-source = { virtual = "." }
+version = "0.1.1"
+source = { editable = "." }
 dependencies = [
     { name = "baml-py" },
     { name = "cuid2" },
@@ -332,7 +332,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "baml-py", specifier = ">=0.65.0" },
+    { name = "baml-py", specifier = ">=0.66.0" },
     { name = "cuid2", specifier = ">=2.0.1" },
     { name = "fs", specifier = ">=2.4.16" },
     { name = "ipykernel", specifier = ">=6.29.5" },

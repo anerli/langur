@@ -1,0 +1,23 @@
+Math Quiz Grading Rubric:
+
+1. What is 5 + 7? 
+   - Correct answer: 12
+   - Points: 1 point if correct, 0 points if incorrect
+
+2. What is the square root of 64?
+   - Correct answer: 8
+   - Points: 1 point if correct, 0 points if incorrect
+
+3. Solve for x: 2x + 3 = 7
+   - Correct answer: 2
+   - Points: 1 point if correct, 0 points if incorrect
+
+4. What is 9 multiplied by 6?
+   - Correct answer: 54
+   - Points: 1 point if correct, 0 points if incorrect
+
+5. What is 15% of 200?
+   - Correct answer: 30
+   - Points: 1 point if correct, 0 points if incorrect
+
+Total: 5 points maximum

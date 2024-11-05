@@ -33,7 +33,7 @@ agent.use(
 )
 agent.run()
 ```
-This is an example that automatically identifies quizzes in the provided filesystem, grades them, and puts them into an empty `grades.csv` file.
+This is an [example](examples/grader/grader.py) that automatically identifies quizzes in the provided filesystem, grades them, and puts them into an empty `grades.csv` file.
 
 The agent will:
 1. Plan out how to "Grade quizzes" based on what we told it to `.use()` (just `Workspace` in this case).

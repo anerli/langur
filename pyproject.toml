@@ -1,11 +1,14 @@
 [project]
 name = "langur"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.1.1"
+authors = [
+    { name="Anders Lie", email="anders@langur.ai" },
+]
+description = "Langur makes it simple to build consistent, observable, and portable LLM agents"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "baml-py>=0.65.0",
+    "baml-py>=0.66.0",
     "cuid2>=2.0.1",
     "fs>=2.4.16",
     "ipykernel>=6.29.5",
@@ -19,3 +22,11 @@ dependencies = [
 dev-dependencies = [
     "ipykernel>=6.29.5",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.urls]
+"Homepage" = "https://github.com/anerli/langur"
+"Discord" = "https://discord.gg/wSBSP56V7U"
