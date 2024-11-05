@@ -1,6 +1,5 @@
 __pycache__
 *.egg-info
-langur/baml_client
 .venv
 .pytest_cache
 dist
