@@ -29,7 +29,7 @@ class ActionSchema:
     fields_dict: Dict[str, tuple[Type, FieldInfo]]
     baml_types: Dict[str, FieldType]
     is_async: bool
-    is_class_method: bool
+    originally_class_method: bool
 
 # def get_baml_type(typ: Type):
 #     # Get corresponding BAML TypeBuilder type based on a Python type.
@@ -190,5 +190,5 @@ def schema_from_function(
         fields_dict=fields_dict,
         baml_types=baml_types,
         is_async=is_async,
-        is_class_method=is_class_method
+        originally_class_method=is_class_method
     )

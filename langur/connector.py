@@ -3,29 +3,46 @@ General connector cognitive worker - binds real-world connectors to the Langur c
 '''
 
 from abc import ABC
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Optional, Type
 import inspect
 from pydantic import BaseModel, Field
 from langur.actions import ActionContext, ActionNode
 from langur.graph.node import Node
-from langur.util.schema import ActionSchema, schema_from_function
+from langur.util.schema import ActionSchema, schema_from_function, schema_from_lc_tool
 from langur.util.model_builder import create_dynamic_model
 from langur.workers.worker import STATE_DONE, STATE_SETUP, Worker
 from langur.util.registries import ActionNodeRegistryFilter, action_node_type_registry
+
+if TYPE_CHECKING:
+    from langchain_core.tools import BaseTool
 
 def register_action(
     action: ActionSchema,
     tags: Optional[List[str]] = None,
     extra_context: Optional[Callable[[Dict[str, Any], Optional[ActionContext]], str]] = None
 ):
+    #print("action.name:", action.name)
     tags = tags if tags else []
     #schema = schema_from_function(fn)
     #print(f"{schema.name} json_schema:", schema.json_schema)
     #print(f"{schema.name} fields:", schema.fields_dict)
 
+    # If action not a class method, adapt it to be
+    if not action.originally_class_method:
+        original_fn = action.fn
+        def fn_wrapper(self, *args, **kwargs):
+            return original_fn(*args, **kwargs)
+        
+        # execute def references schema.fn, so need to change it to the wrapper
+        action.fn = fn_wrapper
+
+
+        #action.is_class_method = True
+
+
     # Polluted execute func but no other easy way without doubling code branches or using exec
     async def execute(self, ctx: ActionContext):
-        args = {"self": ctx.conn if not action.is_class_method else None, **self.inputs}
+        args = {"self": ctx.conn, **self.inputs}
         if "ctx" in action.fields_dict and "ctx" not in action.json_schema["properties"]:
             args["ctx"] = ctx
             
@@ -76,12 +93,16 @@ def register_action(
         func_dict,
         ActionNode
     )
+
+    #print("action.name", action.name)
     
-    if action.is_class_method:
+    if action.originally_class_method:
         connector_class_name = action.fn.__qualname__.split('.')[0]
     else:
         # For one-off actions, use fn name as connector name
         connector_class_name = action.name#action.fn.__qualname__
+    
+    #print("connector_class_name", connector_class_name)
 
     action_node_type_registry.register(
         connector_class_name=connector_class_name,
@@ -117,23 +138,23 @@ def action(
     # @action(kw1=...)
     return decorator
 
-# TOdo: take tool as well
-def create_oneoff_connector_type(
-    fn: Callable
-):
-    schema = schema_from_function(fn)
-    register_action(schema)
-    def action_wrapper(self, *args, **kwargs):
-        fn(*args, **kwargs)
-    
-    # execute def references schema.fn, so need to change it to the wrapper
-    schema.fn = action_wrapper
 
+def create_oneoff_connector_type(schema: ActionSchema):
+    register_action(schema)
     return type(schema.name, (Connector,), {
-        #schema.name: action_wrapper
         schema.name: schema.fn
     })
-    
+
+
+def create_oneoff_connector_type_from_fn(
+    fn: Callable
+):
+    return create_oneoff_connector_type(schema_from_function(fn))
+
+def create_oneoff_connector_type_from_lc_tool(
+    tool: 'BaseTool'
+):
+    return create_oneoff_connector_type(schema_from_lc_tool(tool))
 
 
 class ConnectorOverview(Node):

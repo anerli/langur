@@ -7,13 +7,13 @@ import json
 from typing import TYPE_CHECKING, Callable
 from langur.behavior import AgentBehavior, BaseBehavior, Plan, Task, Execute
 from langur.agent import Agent
-from langur.connector import Connector, create_oneoff_connector_type
+from langur.connector import Connector, create_oneoff_connector_type, create_oneoff_connector_type_from_fn, create_oneoff_connector_type_from_lc_tool
 from langur.connector import Connector
 from langur.llm import LLMConfig
 from langur.workers.worker import Worker
 
-if TYPE_CHECKING:
-    from langchain_core.tools import BaseTool
+#if TYPE_CHECKING:
+from langchain_core.tools import BaseTool
 
 class Langur:
     def __init__(self, instructions: str = None, behavior: AgentBehavior = None, agent: Agent=None, llm_config: LLMConfig = None):
@@ -70,9 +70,12 @@ class Langur:
                 workers = peripheral.compile()
                 for worker in workers:
                     self.agent.add_worker(worker)
+            elif isinstance(peripheral, BaseTool):
+                # Important to check before callable since tool also callable
+                oneoff_connector_type = create_oneoff_connector_type_from_lc_tool(tool=peripheral)
+                self.agent.add_worker(oneoff_connector_type())
             elif isinstance(peripheral, Callable):
-                #oneoff_connector_type = type()
-                oneoff_connector_type = create_oneoff_connector_type(fn=peripheral)
+                oneoff_connector_type = create_oneoff_connector_type_from_fn(fn=peripheral)
                 self.agent.add_worker(oneoff_connector_type())
             else:
                 raise TypeError("Invalid peripheral:", peripheral)

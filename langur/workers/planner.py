@@ -46,7 +46,7 @@ class PlannerWorker(Worker):
         connector = None
         for worker in connector_workers:
             #action_node_types = set()
-            for action_node_type in action_node_type_registry.get_action_node_types(worker.__class__.__name__):#worker.action_node_types:
+            for action_node_type in worker.get_action_node_types():#action_node_type_registry.get_action_node_types(worker.__class__.__name__, worker.action_filter):#worker.action_node_types:
                 #action_node_types
                 if node_data.action_input["type"] == action_node_type.action_type_name():
                     if connector:
@@ -62,7 +62,7 @@ class PlannerWorker(Worker):
         connector_workers = self.cg.query_workers(Connector)
         action_node_types: dict[str, Type[ActionNode]] = {}
         for worker in connector_workers:
-            for action_node_type in action_node_type_registry.get_action_node_types(worker.__class__.__name__):#worker.action_node_types:
+            for action_node_type in worker.get_action_node_types():#action_node_type_registry.get_action_node_types(worker.__class__.__name__, worker.action_filter):#worker.action_node_types:
                 action_node_types[action_node_type.action_type_name()] = action_node_type
             #action_node_types.extend(worker.get_action_node_types())
     
