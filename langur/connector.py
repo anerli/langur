@@ -8,10 +8,86 @@ import inspect
 from pydantic import BaseModel, Field
 from langur.actions import ActionContext, ActionNode
 from langur.graph.node import Node
-from langur.util.schema import schema_from_function
+from langur.util.schema import ActionSchema, schema_from_function
 from langur.util.model_builder import create_dynamic_model
 from langur.workers.worker import STATE_DONE, STATE_SETUP, Worker
 from langur.util.registries import ActionNodeRegistryFilter, action_node_type_registry
+
+def register_action(
+    action: ActionSchema,
+    tags: Optional[List[str]] = None,
+    extra_context: Optional[Callable[[Dict[str, Any], Optional[ActionContext]], str]] = None
+):
+    tags = tags if tags else []
+    #schema = schema_from_function(fn)
+    #print(f"{schema.name} json_schema:", schema.json_schema)
+    #print(f"{schema.name} fields:", schema.fields_dict)
+
+    # Polluted execute func but no other easy way without doubling code branches or using exec
+    async def execute(self, ctx: ActionContext):
+        args = {"self": ctx.conn if not action.is_class_method else None, **self.inputs}
+        if "ctx" in action.fields_dict and "ctx" not in action.json_schema["properties"]:
+            args["ctx"] = ctx
+            
+        result = await action.fn(**args) if action.is_async else action.fn(**args)
+        return f"Executed action {action.name} with inputs {self.inputs}, result:\n{result}"
+    
+    # if "ctx" in action.fields_dict and "ctx" not in action.json_schema["properties"]:
+    #     if action.is_async:
+    #         async def execute(self, ctx: ActionContext):
+    #             result = await action.fn(self=ctx.conn, ctx=ctx, **self.inputs)
+    #             return f"Executed action {action.name} with inputs {self.inputs}, result:\n{result}"
+    #     else:
+    #         async def execute(self, ctx: ActionContext):
+    #             result = action.fn(self=ctx.conn, ctx=ctx, **self.inputs)
+    #             return f"Executed action {action.name} with inputs {self.inputs}, result:\n{result}"
+    # else:
+    #     if action.is_async:
+    #         async def execute(self, ctx: ActionContext):
+    #             result = await action.fn(self=ctx.conn, **self.inputs)
+    #             return f"Executed action {action.name} with inputs {self.inputs}, result:\n{result}"
+    #     else:
+    #         async def execute(self, ctx: ActionContext):
+    #             result = action.fn(self=ctx.conn, **self.inputs)
+    #             return f"Executed action {action.name} with inputs {self.inputs}, result:\n{result}"
+    
+    func_dict = {"execute": execute}    
+
+    if extra_context is not None:
+        extra_schema = schema_from_function(extra_context)
+        if "ctx" in extra_schema.fields_dict and "ctx" not in extra_schema.json_schema["properties"]:
+            def extra_context_wrapper(self, ctx: ActionContext):
+                #return extra_context(self=ctx.conn, ctx=ctx, inputs=self.inputs)
+                return extra_context(self=ctx.conn, ctx=ctx, **self.inputs)
+        else:
+            def extra_context_wrapper(self, ctx: ActionContext):
+                return extra_context(self=ctx.conn, **self.inputs)
+                #return extra_context(self=ctx.conn, ctx=ctx, inputs=self.inputs)
+        
+        func_dict["extra_context"] = extra_context_wrapper
+    
+    action_node_subtype = create_dynamic_model(
+        action.name,
+        {
+            "definition": (ClassVar[str], action.description),
+            #"input_schema": (ClassVar[dict[str, Any]], schema.json_schema["properties"])#TODO
+            "input_schema": (ClassVar[dict[str, Any]], action.baml_types)
+        },
+        func_dict,
+        ActionNode
+    )
+    
+    if action.is_class_method:
+        connector_class_name = action.fn.__qualname__.split('.')[0]
+    else:
+        # For one-off actions, use fn name as connector name
+        connector_class_name = action.name#action.fn.__qualname__
+
+    action_node_type_registry.register(
+        connector_class_name=connector_class_name,
+        action_cls=action_node_subtype,
+        tags=tags
+    )
 
 def action(
     fn: Optional[Callable] = None,
@@ -25,76 +101,39 @@ def action(
     - The fields of this function need to match the fields of the action, except each needs a None default!
     - Should return a str which serves as context for the LLM when deciding on inputs for the action.
     """
-    #print("tags:", tags)
-    tags = tags if tags else []
-    def _register_model(func: Callable[[Any], Any]):
-        schema = schema_from_function(func)
-        #print(f"{schema.name} json_schema:", schema.json_schema)
-        #print(f"{schema.name} fields:", schema.fields_dict)
-        
-        if "ctx" in schema.fields_dict and "ctx" not in schema.json_schema["properties"]:
-            if schema.is_async:
-                async def execute(self, ctx: ActionContext):
-                    result = await func(self=ctx.conn, ctx=ctx, **self.inputs)
-                    return f"Executed action {schema.name} with inputs {self.inputs}, result:\n{result}"
-            else:
-                async def execute(self, ctx: ActionContext):
-                    result = func(self=ctx.conn, ctx=ctx, **self.inputs)
-                    return f"Executed action {schema.name} with inputs {self.inputs}, result:\n{result}"
-        else:
-            if schema.is_async:
-                async def execute(self, ctx: ActionContext):
-                    result = await func(self=ctx.conn, **self.inputs)
-                    return f"Executed action {schema.name} with inputs {self.inputs}, result:\n{result}"
-            else:
-                async def execute(self, ctx: ActionContext):
-                    result = func(self=ctx.conn, **self.inputs)
-                    return f"Executed action {schema.name} with inputs {self.inputs}, result:\n{result}"
-        
-        func_dict = {"execute": execute}    
 
-        if extra_context is not None:
-            extra_schema = schema_from_function(extra_context)
-            if "ctx" in extra_schema.fields_dict and "ctx" not in extra_schema.json_schema["properties"]:
-                def extra_context_wrapper(self, ctx: ActionContext):
-                    #return extra_context(self=ctx.conn, ctx=ctx, inputs=self.inputs)
-                    return extra_context(self=ctx.conn, ctx=ctx, **self.inputs)
-            else:
-                def extra_context_wrapper(self, ctx: ActionContext):
-                    return extra_context(self=ctx.conn, **self.inputs)
-                    #return extra_context(self=ctx.conn, ctx=ctx, inputs=self.inputs)
-            
-            func_dict["extra_context"] = extra_context_wrapper
-        
-        action_node_subtype = create_dynamic_model(
-            schema.name,
-            {
-                "definition": (ClassVar[str], schema.description),
-                #"input_schema": (ClassVar[dict[str, Any]], schema.json_schema["properties"])#TODO
-                "input_schema": (ClassVar[dict[str, Any]], schema.baml_types)
-            },
-            func_dict,
-            ActionNode
+    def decorator(fn):
+        schema = schema_from_function(fn)
+        register_action(
+            action=schema,
+            tags=tags,
+            extra_context=extra_context
         )
-        
-        connector_class_name = func.__qualname__.split('.')[0]
-        action_node_type_registry.register(
-            connector_class_name=connector_class_name,
-            action_cls=action_node_subtype,
-            tags=tags
-        )
-        
-        return func
-
-    # Handle @action case
-    if fn is not None:
-        _register_model(fn)
         return fn
-    # Handle @action(kw1=...) case  
-    def decorator(func):
-        _register_model(func)
-        return func
+
+    # @action
+    if fn is not None:
+        return decorator(fn)
+    # @action(kw1=...)
     return decorator
+
+# TOdo: take tool as well
+def create_oneoff_connector_type(
+    fn: Callable
+):
+    schema = schema_from_function(fn)
+    register_action(schema)
+    def action_wrapper(self, *args, **kwargs):
+        fn(*args, **kwargs)
+    
+    # execute def references schema.fn, so need to change it to the wrapper
+    schema.fn = action_wrapper
+
+    return type(schema.name, (Connector,), {
+        #schema.name: action_wrapper
+        schema.name: schema.fn
+    })
+    
 
 
 class ConnectorOverview(Node):

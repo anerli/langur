@@ -1,7 +1,7 @@
 
 from dataclasses import dataclass
 import inspect
-from typing import Annotated, Any, Callable, Dict, Optional, Type, get_args, get_origin
+from typing import Annotated, Any, Callable, Dict, Optional, Type, get_args, get_origin, TYPE_CHECKING
 
 from pydantic import Field, PydanticSchemaGenerationError, TypeAdapter
 from pydantic.fields import FieldInfo
@@ -10,38 +10,41 @@ from langur.actions import ActionContext
 from langur.baml_client.type_builder import TypeBuilder, FieldType
 from langur.util.baml_type_converter import get_type_base
 
+if TYPE_CHECKING:
+    from langchain_core.tools import BaseTool
+
 
 @dataclass
-class SchemaResult:
+class ActionSchema:
+    '''
+    Representation of a function / tool / action, derived from many possible things, for instance:
+    - A Connector @action (Python function)
+    - A Python function outside of a connector
+    - A LangChain tool
+    '''
+    fn: Callable
     name: str
     description: str
     json_schema: dict
     fields_dict: Dict[str, tuple[Type, FieldInfo]]
     baml_types: Dict[str, FieldType]
     is_async: bool
+    is_class_method: bool
 
 # def get_baml_type(typ: Type):
 #     # Get corresponding BAML TypeBuilder type based on a Python type.
 
+def schema_from_lc_tool(tool: 'BaseTool') -> ActionSchema:
+    return schema_from_function(
+        fn = tool._run,
+        name_override = tool.name,
+        description_override=tool.description,
+        json_schema_override=tool.args_schema.model_json_schema()
+    )
 
 
-def schema_from_function(fn: Callable) -> SchemaResult:
-    """
-    Convert a function's signature to a Pydantic schema with Fields preserving descriptions.
-    
-    Any field matching the signature `ctx: ActionContext` is omitted from json_schema.
-    Any field with the name `self` is omitted from json_schema and fields_dict.
-   
-    Args:
-        fn: The function to analyze
-       
-    Returns:
-        SchemaResult containing name, description, JSON schema and fields dictionary
-    """
-    name = fn.__name__
-    description = fn.__doc__ or ""
+def get_fields_json_schema(fn: Callable, name: str):
     signature = inspect.signature(fn)
-    is_async = inspect.iscoroutinefunction(fn)
     
     # Create a wrapper function without ActionContext parameters for schema generation
     def wrapper_fn(*args, **kwargs):
@@ -68,15 +71,46 @@ def schema_from_function(fn: Callable) -> SchemaResult:
         json_schema = TypeAdapter(wrapper_fn).json_schema()
     except PydanticSchemaGenerationError:
         raise ValueError(
-            f'Could not generate a schema for tool "{name}". '
+            f'Could not generate a schema for action "{name}". '
             "Tool functions must have type hints that are compatible with Pydantic."
         )
+    return json_schema
+    
+
+
+def schema_from_function(
+    fn: Callable,
+    name_override: str = None,
+    description_override: str = None,
+    json_schema_override: Dict[str, Any] = None
+) -> ActionSchema:
+    """
+    Convert a function's signature to a Pydantic schema with Fields preserving descriptions.
+    
+    Any field matching the signature `ctx: ActionContext` is omitted from json_schema.
+    Any field with the name `self` is omitted from json_schema and fields_dict.
    
+    Args:
+        fn: The function to analyze
+       
+    Returns:
+        SchemaResult containing name, description, JSON schema and fields dictionary
+    """
+    name = name_override or fn.__name__
+    description = description_override or fn.__doc__ or ""
+    signature = inspect.signature(fn)
+    is_async = inspect.iscoroutinefunction(fn)
+
+    json_schema = json_schema_override or get_fields_json_schema(fn, name)
+    
+    is_class_method = False
+
     # Create fields_dict with Field objects, including ALL original parameters except self
     fields_dict = {}
     for param_name, param in signature.parameters.items():
         # Skip self parameter for fields_dict too
         if param_name == 'self':
+            is_class_method = True
             continue
             
         field_kwargs = {}
@@ -140,6 +174,7 @@ def schema_from_function(fn: Callable) -> SchemaResult:
 
     # TODO: Should maybe just be one FieldType to captured top-level required properly?
     # Ideally should not be going Python -> JSON Schema -> BAML FieldType anyway, and do Python -> BAML FieldType instead.
+    # Hm but maybe we have to to properly support langchain tool conversion
     tb = TypeBuilder()
     baml_types = {k: get_type_base(v, tb) for k, v in json_schema["properties"].items()}
     #baml_types = get_type_base(json_schema, tb)
@@ -147,11 +182,13 @@ def schema_from_function(fn: Callable) -> SchemaResult:
 
     #print("baml_types:", baml_types)
 
-    return SchemaResult(
+    return ActionSchema(
+        fn=fn,
         name=name,
         description=description,
         json_schema=json_schema,
         fields_dict=fields_dict,
         baml_types=baml_types,
-        is_async=is_async
+        is_async=is_async,
+        is_class_method=is_class_method
     )

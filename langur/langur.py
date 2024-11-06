@@ -4,12 +4,16 @@ High level agent interface.
 
 import asyncio
 import json
+from typing import TYPE_CHECKING, Callable
 from langur.behavior import AgentBehavior, BaseBehavior, Plan, Task, Execute
 from langur.agent import Agent
-from langur.connector import Connector
+from langur.connector import Connector, create_oneoff_connector_type
 from langur.connector import Connector
 from langur.llm import LLMConfig
 from langur.workers.worker import Worker
+
+if TYPE_CHECKING:
+    from langchain_core.tools import BaseTool
 
 class Langur:
     def __init__(self, instructions: str = None, behavior: AgentBehavior = None, agent: Agent=None, llm_config: LLMConfig = None):
@@ -45,7 +49,7 @@ class Langur:
         self.agent = Agent(workers=workers, llm_config=llm_config)
 
 
-    def use(self, *peripherals: Connector | Worker | AgentBehavior | BaseBehavior):
+    def use(self, *peripherals: Connector | Worker | Callable | 'BaseTool' | AgentBehavior | BaseBehavior):
         '''
         Provide a peripheral for the agent to use. You can provide:
         - Connector - a configurable object with multiple actions
@@ -53,6 +57,7 @@ class Langur:
         - Worker - low-level cognitive worker
         '''
         for peripheral in peripherals:
+            #print(peripheral)
             if isinstance(peripheral, Worker):
                 self.agent.add_worker(peripheral)
             elif isinstance(peripheral, BaseBehavior):
@@ -65,6 +70,10 @@ class Langur:
                 workers = peripheral.compile()
                 for worker in workers:
                     self.agent.add_worker(worker)
+            elif isinstance(peripheral, Callable):
+                #oneoff_connector_type = type()
+                oneoff_connector_type = create_oneoff_connector_type(fn=peripheral)
+                self.agent.add_worker(oneoff_connector_type())
             else:
                 raise TypeError("Invalid peripheral:", peripheral)
         
