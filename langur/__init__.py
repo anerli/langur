@@ -1,3 +1,7 @@
+import os
+# tmp hack until controls implemented
+os.environ['BAML_LOG'] = 'warn'
+
 # Ensure async stuff works in jupyter notebooks
 import nest_asyncio
 nest_asyncio.apply()

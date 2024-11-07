@@ -1,7 +1,6 @@
 '''
 High level agent interface.
 '''
-
 import asyncio
 import json
 from typing import TYPE_CHECKING, Callable
@@ -29,6 +28,8 @@ class Langur:
         Raises:
             RuntimeError: If no instructions or behavior are provided.
         '''
+        
+
         if agent:
             self.agent = agent
             return
