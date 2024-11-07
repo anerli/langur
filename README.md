@@ -4,6 +4,8 @@
 
 Langur makes it simple to build consistent, observable, and portable LLM agents.
 
+[Discord](https://discord.gg/wSBSP56V7U) | [Blog](https://www.langur.ai/blog) 
+
 > ⚠️ Langur is early in development. Expect frequent breaking changes. Depending on how it's configured Langur may be able to access arbitrary files or run code - use at your own risk.
 
 ## Setup
@@ -14,13 +16,6 @@ pip install langur
 ```
 
 Langur uses Anthropic by default, and it's recommended you use larger models for the best results. If you want though, you can [easily swap the LLM backend](#configuring-llm). Otherwise, setup your anthropic key `ANTHROPIC_API_KEY` before proceeding!
-
-
-## Resources
-
-Docs: Coming soon
-
-Discord: https://discord.gg/wSBSP56V7U - Join the Discord to ask me any questions, report issues, or make suggestions!
 
 ## Getting Started
 
@@ -83,11 +78,16 @@ You could then continue the agent's execution from this point, where it has the 
 
 Since this agent representation is plain JSON, you can even send agents over the wire, store them in a database, or do whatever you like really! They are completely portable and can be run on any system with Python and Langur installed.
 
+### Available Connectors
+
+Actions / connectors are available in any of these ways:
+- `langur.connectors` contains a few built-in connectors which will be optimized for Langur's architecture. This will grow significantly over time
+- Using `langchain` tools / toolkits: You can pass these directly to agent.use(...) and Langur will adapt them.
+- Build your own! See [Building Connectors](#building-connectors).
+
 ### Going Further
 
 Currently there is no documentation, however you can check out more examples by checking out the [challenges](./challenges) - which are different tasks meant to evaluate Langur's abilities in various capacities. You can also ask any questions you have in the [Langur Discord](https://discord.gg/wSBSP56V7U).
-
-Langur provides some connectors in the library under `langur.connectors` - for example `Workspace` is a filesystem with basic read/write operations, or optional code execution features. Currently the connectors provided are extremely basic, these will grow over time. However Langur also makes it easy to define custom connectors, see [Building Connectors](#building-connectors).
 
 If this plan/execute behavior just doesn't work for your agent use case, another key tenet of Langur's design is to have **modular behavior** - so you can customize it to fit your needs. Learn more in [Customizing Behavior](#customizing-behavior).
 
@@ -145,16 +145,6 @@ The parameter `ctx: ActionContext` is a special parameter that includes informat
 - `ctx.purpose` contains a short natural language description of the specific purpose of a particular action use.
 - `ctx.ctx` is any prompting context normally used to construct inputs for an action, but you can hook into it and use it as well. Print it out to see a bit of what's going on under the hood!
 
-
-## How it Works
-Langur's behavior is driven entirely by various "metacognitive workers" operating on a shared "cognition graph". These workers might manipulate the graph itself, or they might be interacting with the real-world and relaying that information to the graph. Workers that interact with the real-world are also called [Connectors](#building-connectors), and Langur is designed to make these [Connectors](#building-connectors) easy to implement to define new modes of interaction with the world.
-
-Why this approach?
-1. Modular behavior - Agent behavior is driven by several workers instead of a centralized system. This makes it easier to add new behavior without accidentally affecting all other facets of behavior, and makes it possible for advanced users to design and include their own custom behavior.
-2. Observability - Being able to see a graph representing the agent's behavior is incredibly useful for visually understanding the agent's intent, and promotes sanity as a developer designing systems that operate on the graph.
-3. Parallelizability - Workers can potentially run in parallel (or concurrently really) - and since many of these workers are using LLMs to operate on the graph, we can speed up these I/O bound prompts.
-4. Serializability - Since all behavior state is stored in the graph, we can save and load the graph in order to save and load agent behavior.
-
 ## Customizing Behavior
 
 To customize agent behavior, pass AgentBehavior to the behavior kwarg when creating your agent instead of just passing in instructions: 
@@ -207,6 +197,22 @@ python ./challenges/challenge_runner.py <challenge_dir>
 python ./challenges/challenge_runner.py grader
 ```
 These challenges are designed to test the abilities of the Langur system in various ways - many more will be added over time. If you have ideas for a challenge or use case you want to try, let me know!
+
+
+## How it Works
+Langur's behavior is driven entirely by various "metacognitive workers" operating on a shared "cognition graph". These workers might manipulate the graph itself, or they might be interacting with the real-world and relaying that information to the graph. Workers that interact with the real-world are also called [Connectors](#building-connectors), and Langur is designed to make these [Connectors](#building-connectors) easy to implement to define new modes of interaction with the world.
+
+Why this approach?
+1. Modular behavior - Agent behavior is driven by several workers instead of a centralized system. This makes it easier to add new behavior without accidentally affecting all other facets of behavior, and makes it possible for advanced users to design and include their own custom behavior.
+2. Observability - Being able to see a graph representing the agent's behavior is incredibly useful for visually understanding the agent's intent, and promotes sanity as a developer designing systems that operate on the graph.
+3. Parallelizability - Workers can potentially run in parallel (or concurrently really) - and since many of these workers are using LLMs to operate on the graph, we can speed up these I/O bound prompts.
+4. Serializability - Since all behavior state is stored in the graph, we can save and load the graph in order to save and load agent behavior.
+
+## Resources
+
+Docs: Coming soon
+
+Discord: https://discord.gg/wSBSP56V7U - Join the Discord to ask me any questions, report issues, or make suggestions!
 
 ## Known Issues
 - Does not properly support multiple connectors of the same type (will be implemented)
