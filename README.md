@@ -13,7 +13,7 @@ Install:
 pip install langur
 ```
 
-Langur uses Anthropic by default, and it's recommended you use Anthropic models for the best results. If you want though, you can [easily swap the LLM backend](#configuring-llm). Otherwise, setup your anthropic key `ANTHROPIC_API_KEY` before proceeding!
+Langur uses Anthropic by default, and it's recommended you use larger models for the best results. If you want though, you can [easily swap the LLM backend](#configuring-llm). Otherwise, setup your anthropic key `ANTHROPIC_API_KEY` before proceeding!
 
 
 ## Resources
@@ -185,7 +185,7 @@ If you want to define completely new behaviors, that's also possible within the 
 
 ## Configuring LLM
 
-Langur is tested and developed with Anthropic models (Claude Sonnet 3.5), as they have shown to be the most effective (in my experience, by quite a lot) for consistent results for agent planning and execution. Therefore it is recommended you use the default Anthropic LLM configuration. However, you can customize the LLM used by the agent by passing an LLMConfig to your agent:
+Langur is usually tested and developed with Anthropic models (Claude Sonnet 3.5). Therefore it is recommended you use the default Anthropic LLM configuration. However, you can customize the LLM used by the agent by passing an LLMConfig to your agent:
 ```python
 from langur.llm import LLMConfig
 
@@ -193,11 +193,11 @@ agent = Langur(
     "Say hi",
     llm_config=LLMConfig(
         provider="openai",
-        options={"model": "gpt-4o-mini"}
+        options={"model": "gpt-4o", "temperature": 0.0}
     )
 )
 ```
-In this example, we configured Langur to use OpenAI's `gpt-4o-mini`. You can use open source LLMs by using Ollama / vLLM providers for example. Langur uses BAML for its prompting/LLM backend, so see https://docs.boundaryml.com/guide/baml-basics/switching-llms for more info on how to set up this configuration.
+In this example, we configured Langur to use OpenAI's `gpt-4o` (which also tends to work fairly well). You can use open source LLMs by using Ollama / vLLM providers for example. Langur uses BAML for its prompting/LLM backend, so see https://docs.boundaryml.com/guide/baml-basics/switching-llms for more info on how to set up this configuration.
 
 ## Running Challenges
 If you clone the repo, you can run the included challenges like so:

@@ -46,7 +46,7 @@ wheels = [
 
 [[package]]
 name = "baml-py"
-version = "0.66.0"
+version = "0.67.0"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7b/35/fb47f6b3c8817fd4d48d45d1b751120a3362dc4be4fd3a2b8fe08b3800f8/baml_py-0.66.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:66f601096865709147ab97aa305e0893e6f0b5e576f8f9bd0680acd412e81a61", size = 9877011 },
