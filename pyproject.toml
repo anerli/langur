@@ -30,3 +30,9 @@ build-backend = "hatchling.build"
 [project.urls]
 "Homepage" = "https://github.com/anerli/langur"
 "Discord" = "https://discord.gg/wSBSP56V7U"
+
+[project.optional-dependencies]
+langchain = [
+    "langchain-community>=0.3.5",
+    "langchain-core>=0.3.15",
+]

@@ -6,13 +6,34 @@ import json
 from typing import TYPE_CHECKING, Callable
 from langur.behavior import AgentBehavior, BaseBehavior, Plan, Task, Execute
 from langur.agent import Agent
-from langur.connector import Connector, create_oneoff_connector_type, create_oneoff_connector_type_from_fn, create_oneoff_connector_type_from_lc_tool
+from langur.connector import Connector, create_connector_type_from_lc_tk, create_oneoff_connector_type, create_oneoff_connector_type_from_fn, create_oneoff_connector_type_from_lc_tool
 from langur.connector import Connector
 from langur.llm import LLMConfig
 from langur.workers.worker import Worker
 
-#if TYPE_CHECKING:
-from langchain_core.tools import BaseTool
+if TYPE_CHECKING:
+    from langchain_core.tools import BaseTool
+    from langchain_core.tools import BaseToolkit
+
+def is_lc_tool(obj) -> bool:
+    """Check if object is a subclass of BaseTool without importing langchain"""
+    for cls in type(obj).__mro__:
+        # print(cls.__module__)
+        # print(cls.__name__)
+        if (cls.__module__ == 'langchain_core.tools' or cls.__module__ == 'langchain_core.tools.base') and cls.__name__ == 'BaseTool':
+            return True
+    return False
+
+def is_lc_toolkit(obj) -> bool:
+    """Check if object is ToolKit without importing langchain"""
+    for cls in type(obj).__mro__:
+        # print(cls.__module__)
+        # print(cls.__name__)
+        if (cls.__module__ == 'langchain_core.tools' or cls.__module__ == 'langchain_core.tools.base') and cls.__name__ == 'BaseToolkit':
+            return True
+    return False
+
+
 
 class Langur:
     def __init__(self, instructions: str = None, behavior: AgentBehavior = None, agent: Agent=None, llm_config: LLMConfig = None):
@@ -71,13 +92,18 @@ class Langur:
                 workers = peripheral.compile()
                 for worker in workers:
                     self.agent.add_worker(worker)
-            elif isinstance(peripheral, BaseTool):
+            #elif isinstance(peripheral, BaseTool):
+            elif is_lc_tool(peripheral):
                 # Important to check before callable since tool also callable
                 oneoff_connector_type = create_oneoff_connector_type_from_lc_tool(tool=peripheral)
                 self.agent.add_worker(oneoff_connector_type())
             elif isinstance(peripheral, Callable):
                 oneoff_connector_type = create_oneoff_connector_type_from_fn(fn=peripheral)
                 self.agent.add_worker(oneoff_connector_type())
+            elif is_lc_toolkit(peripheral):
+                #print("Toolkit")
+                connector_type = create_connector_type_from_lc_tk(peripheral)
+                self.agent.add_worker(connector_type())
             else:
                 raise TypeError("Invalid peripheral:", peripheral)
         

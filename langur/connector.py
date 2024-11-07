@@ -14,12 +14,13 @@ from langur.workers.worker import STATE_DONE, STATE_SETUP, Worker
 from langur.util.registries import ActionNodeRegistryFilter, action_node_type_registry
 
 if TYPE_CHECKING:
-    from langchain_core.tools import BaseTool
+    from langchain_core.tools import BaseTool, BaseToolkit
 
 def register_action(
     action: ActionSchema,
     tags: Optional[List[str]] = None,
-    extra_context: Optional[Callable[[Dict[str, Any], Optional[ActionContext]], str]] = None
+    extra_context: Optional[Callable[[Dict[str, Any], Optional[ActionContext]], str]] = None,
+    override_connector_name: str = None
 ):
     #print("action.name:", action.name)
     tags = tags if tags else []
@@ -96,7 +97,9 @@ def register_action(
 
     #print("action.name", action.name)
     
-    if action.originally_class_method:
+    if override_connector_name:
+        connector_class_name = override_connector_name
+    elif action.originally_class_method:
         connector_class_name = action.fn.__qualname__.split('.')[0]
     else:
         # For one-off actions, use fn name as connector name
@@ -156,6 +159,16 @@ def create_oneoff_connector_type_from_lc_tool(
 ):
     return create_oneoff_connector_type(schema_from_lc_tool(tool))
 
+def create_connector_type_from_lc_tk(toolkit: 'BaseToolkit'):
+    '''Create a connector from a LangChain Toolkit'''
+    tools = toolkit.get_tools()
+    connector_name = toolkit.__class__.__name__
+    schemas = []
+    for tool in tools:
+        schema = schema_from_lc_tool(tool)
+        register_action(action=schema, override_connector_name=connector_name)
+        schemas.append(schema)
+    return type(connector_name, (Connector,), {schema.name: schema.fn for schema in schemas})
 
 class ConnectorOverview(Node):
     content: str
